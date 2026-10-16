@@ -24,6 +24,8 @@ It is satire of ideas, not of anyone in particular, and it is an
 equal-opportunity ball: the doomers get it, and so do the accelerationists,
 the commune, the Eurocrats, and you.
 
+![The title screen](docs/screenshots/title.jpg)
+
 ## Run
 
 ```sh

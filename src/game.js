@@ -124,7 +124,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
     hud.horizon(horizon(run.smashed));
     hud.clock(elapsed);
     audio.wake();
-    audio.startMusic(run.map.districtAt(run.ball.x, run.ball.z)?.name);
+    audio.startMusic();
   }
 
   function save() {
@@ -147,10 +147,10 @@ export function createGame({ stage, hud, input, audio, storage }) {
     }
   }
 
-  function physics(push) {
+  function physics(push, boost) {
     const live = state === 'play';
     const moving = state !== 'lost' || lostHow === 'sunk';
-    const out = stepRun(run, push, STEP, { live, moving: moving && state !== 'title' });
+    const out = stepRun(run, push, STEP, { live, moving: moving && state !== 'title', boost });
     if (state !== 'play') return;
     const b = run.ball;
     for (const car of out.honks) audio.honk(car.kind);
@@ -230,7 +230,6 @@ export function createGame({ stage, hud, input, audio, storage }) {
         audio.chime();
       }
       hud.place(out.district.name);
-      audio.district(out.district.name);
     }
     if (out.outcome) lose(out.outcome);
   }
@@ -253,7 +252,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
       if (p === 'pause' && state !== 'title') {
         paused = !paused;
         hud.paused(paused);
-        if (paused) audio.stopMusic(); else audio.startMusic(run.district?.name);
+        if (paused) audio.stopMusic(); else audio.startMusic();
         if (paused) save();
       }
       if (p === 'start' && state === 'title') start();
@@ -269,10 +268,11 @@ export function createGame({ stage, hud, input, audio, storage }) {
 
     timer += dt;
     const push = state === 'play' ? toGround(stick, view.yaw) : [0, 0];
+    const boosting = input.boost();
     accumulator = Math.min(accumulator + dt, STEP * 12);
     while (accumulator >= STEP) {
       accumulator -= STEP;
-      physics(state === 'play' ? push : [0, 0]);
+      physics(state === 'play' ? push : [0, 0], state === 'play' && boosting);
     }
 
     const b = run.ball;
@@ -313,6 +313,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
     else for (let i = 0; i < 3; i++) w[i] *= Math.max(0, 1 - 0.3 * dt);
     turn(q, w, dt);
     mace.update(dt, { q, position: [b.x, b.y, b.z] });
+    hud.accel(run.accel, run.winded);
     if (state === 'lost' && lostHow === 'sunk') player.position.y = b.y - Math.min(1, timer / 0.8) * 0.8;
 
     world.userData.uncover(b, dt);

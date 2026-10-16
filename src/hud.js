@@ -19,6 +19,8 @@ export function createHud(root, { onStart, onNew }) {
   const comboEl = $('combo');
   const horizonEl = $('horizon');
   const quipEl = $('quip');
+  const accelEl = $('accel');
+  const accelFill = $('accel-fill');
   const clockEl = $('clock');
   const spikesEl = $('spikes');
   const spikesFill = $('spikes-fill');
@@ -205,6 +207,12 @@ export function createHud(root, { onStart, onNew }) {
       const k = Math.max(0, Math.min(1, v / 100));
       spikesFill.style.width = `${k * 100}%`;
       spikesEl.classList.toggle('low', k <= 0.3);
+    },
+
+    /** The acceleration meter, 0 to 1; `winded` while it recovers. */
+    accel(v, winded = false) {
+      accelFill.style.width = `${Math.max(0, Math.min(1, v)) * 100}%`;
+      accelEl.classList.toggle('winded', winded);
     },
 
     /** A knock: the meter shakes. */

@@ -122,3 +122,30 @@ test('enough knocks and it pops', () => {
   const outs = roll(run, 2);
   assert.equal(outs.find((o) => o.outcome)?.outcome, 'blunted');
 });
+
+test('accelerating gets a higher top speed, drains the meter, and refills when let go', () => {
+  const top = (boost) => {
+    const run = createRun(GFX, { map: yard(), foes: false });
+    let fastest = 0;
+    for (let t = 0; t < 2; t += STEP) {
+      stepRun(run, [0, 1], STEP, { boost });
+      fastest = Math.max(fastest, Math.hypot(run.ball.vx, run.ball.vz));
+    }
+    return { fastest, run };
+  };
+  const plain = top(false), fast = top(true);
+  assert.ok(fast.fastest > plain.fastest * 1.3, `${fast.fastest} v ${plain.fastest}`);
+  assert.ok(fast.run.accel < 1 && plain.run.accel === 1);
+  const run = fast.run;
+  for (let t = 0; t < 6; t += STEP) stepRun(run, [0, 0], STEP, { boost: false });
+  assert.equal(run.accel, 1);
+});
+
+test('run the meter dry and it can\'t be used again until it has recovered a little', () => {
+  const run = createRun(GFX, { map: yard(), foes: false });
+  let on = 0;
+  for (let t = 0; t < 4; t += STEP) on += stepRun(run, [0, 1], STEP, { boost: true }).accelerating ? STEP : 0;
+  assert.ok(on > 2.5 && on < 3.5, `${on}s of acceleration`);
+  assert.ok(run.winded);
+  assert.equal(stepRun(run, [0, 1], STEP, { boost: true }).accelerating, false);
+});

@@ -5,11 +5,8 @@ import { createBand, THEMES } from './music.js';
  * the grind of a steel ball, filtered noise that rises with speed; the
  * horns, the squeak, the smashes, the grind of the whetstone and the jingles
  * are short synthesised bursts; the music is Metroll's band (`music.js`),
- * the same one: drums, bass, double-tracked guitars and a lead, played live,
- * in a different style for each part of the city — a goth riff in Portland
- * Heights, industrial in the Alignment District, hair metal in Brussels,
- * thrash on the superhighway, nu metal on the Compute Farm, death metal
- * in the Pause Compound.
+ * playing the hardcore track (New York, 1989: a d-beat, short, no encores)
+ * all the way through, title and city alike.
  *
  * Nothing can play until the page has had a click or a key (browsers insist),
  * so `wake()` is called on the first one.
@@ -17,24 +14,15 @@ import { createBand, THEMES } from './music.js';
 
 const NOTE = (n) => 440 * Math.pow(2, (n - 69) / 12);
 
-/** The theme (Metroll's, see `music.js`) and tempo each part of the city plays, and the one for anywhere else. */
-const SCORE = Object.freeze({
-  'Portland Heights': ['abbey', 110],
-  'The Alignment District': ['powerplant', 136],
-  'Brussels-sur-Mer': ['strip', 126],
-  'The Information Superhighway': ['bay', 168],
-  'The Compute Farm': ['airfield', 96],
-  'The Pause Compound': ['swamp', 180],
-  'The Far Side': ['festival', 132],
-});
-const TITLE = ['metroll', 136];
+/** The theme (Metroll's, see `music.js`) and its tempo: the hardcore track. */
+const SCORE = ['nyc', 190];
 
 export function createAudio() {
   let ctx = null, master = null, sfx = null, music = null;
   let roll = null, noise = null, band = null;
   let muted = false;
-  /** What the band should be playing: [theme, tempo], or null for silence. Set before the page has had its click, too. */
-  let want = null;
+  /** Whether the band should be playing. Set before the page has had its click, too. */
+  let want = false;
 
   try { muted = localStorage.getItem('metrlol.muted') === '1'; } catch {}
 
@@ -80,7 +68,7 @@ export function createAudio() {
   function playWanted() {
     if (!band) return;
     if (!want) { band.stop(); return; }
-    if (band.theme !== THEMES[want[0]]) band.start(THEMES[want[0]], want[1]);
+    if (band.theme !== THEMES[SCORE[0]]) band.start(THEMES[SCORE[0]], SCORE[1]);
   }
 
   const now = () => ctx.currentTime;
@@ -220,21 +208,14 @@ export function createAudio() {
       tone({ at: 0.12, freq: NOTE(83), length: 0.45, type: 'triangle', gain: 0.12 });
     },
 
-    /** The score for `district` (or the title's anthem, if none): now, or as soon as the page has had a click. */
-    startMusic(district = null) {
-      want = SCORE[district] ?? TITLE;
-      playWanted();
-    },
-
-    /** Moving to a new part of the city: the band changes style. */
-    district(name) {
-      if (!want) return;
-      want = SCORE[name] ?? TITLE;
+    /** The music: now, or as soon as the page has had a click. */
+    startMusic() {
+      want = true;
       playWanted();
     },
 
     stopMusic() {
-      want = null;
+      want = false;
       band?.stop();
     },
   };

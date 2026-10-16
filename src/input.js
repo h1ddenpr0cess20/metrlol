@@ -15,6 +15,9 @@
  * - Two fingers: pinch to zoom, twist to turn, drag up or down to tilt.
  * - Gamepad: right stick to turn and tilt, shoulder buttons to zoom.
  *
+ * Acceleration: Space or Shift held (the ACCELERATE button on a touch screen;
+ * A, X or the right trigger on a gamepad): `boost()`.
+ *
  * Buttons come out as one-shot presses: `start` (Enter, Space, A or a tap),
  * `pause` (P, Escape, Start), `mute` (M), `home` (C, or the right stick pressed).
  */
@@ -27,6 +30,7 @@ const KEYS = {
   KeyQ: 'turnLeft', KeyE: 'turnRight',
   Equal: 'zoomIn', NumpadAdd: 'zoomIn',
   Minus: 'zoomOut', NumpadSubtract: 'zoomOut',
+  ShiftLeft: 'boost', ShiftRight: 'boost', Space: 'boost',
 };
 const PRESSES = {
   Enter: 'start', Space: 'start',
@@ -130,6 +134,14 @@ export function createInput(surface, { anchor }) {
     zoom *= Math.exp(e.deltaY * lines * 0.0015);
   }, { passive: false });
 
+  // The touch screen's ACCELERATE button, held.
+  let touchBoost = false;
+  const accel = typeof document !== 'undefined' ? document.getElementById('accel-touch') : null;
+  if (accel) {
+    accel.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); touchBoost = true; });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) accel.addEventListener(ev, () => { touchBoost = false; });
+  }
+  let padBoost = false;
   let padWas = {};
   let padLook = { turn: 0, tilt: 0, zoom: 0 };
 
@@ -163,6 +175,7 @@ export function createInput(surface, { anchor }) {
         if (b(15)) x += 1;
         const [, , rx = 0, ry = 0] = pad.axes;
         padLook = { turn: -dead(rx), tilt: dead(ry), zoom: (b(4) ? -1 : 0) + (b(5) ? 1 : 0) };
+        padBoost = !!(b(0) || b(2) || b(7));
         const now = { start: b(0), pause: b(9), home: b(11) };
         for (const name of Object.keys(now)) if (now[name] && !padWas[name]) presses.push(name);
         padWas = now;
@@ -187,6 +200,11 @@ export function createInput(surface, { anchor }) {
       };
       turn = 0; tilt = 0; zoom = 1;
       return out;
+    },
+
+    /** Whether acceleration is held. */
+    boost() {
+      return held.has('boost') || touchBoost || padBoost;
     },
 
     /** The one-shot presses since last asked. */

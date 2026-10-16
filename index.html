@@ -18,6 +18,7 @@
   <div class="mid">
     <span class="label">spikes</span>
     <div id="spikes"><div id="spikes-fill"></div></div>
+    <div id="accel-bar"><span class="label">accelerate</span><div id="accel"><div id="accel-fill"></div></div></div>
     <div class="horizon"><span class="label">time horizon</span><span id="horizon">1 min</span></div>
   </div>
   <div class="right">
@@ -48,11 +49,13 @@
       <span class="keys"><kbd>Q</kbd><kbd>E</kbd> or right-drag turn · wheel zoom · <kbd>C</kbd> reset view</span>
       <span class="touch">two fingers: pinch to zoom, twist to turn</span>
       <span class="keys">speed is everything: roll fast to smash, slow and it bounces</span>
+      <span class="keys"><kbd>Space</kbd> or <kbd>Shift</kbd> accelerate</span>
       <span class="keys"><kbd>P</kbd> pause · <kbd>M</kbd> mute</span>
     </p>
   </div>
 </section>
 
+<button id="accel-touch" type="button">ACCELERATE</button>
 <button id="mute" type="button" aria-pressed="false">sound on</button>
 <div id="loading" hidden><span>sharpening</span></div>
 <pre id="error" hidden></pre>

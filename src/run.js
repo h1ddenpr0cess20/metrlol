@@ -2,7 +2,7 @@ import { RADIUS } from './ball.js';
 import { createCrowd } from './crowd.js';
 import { createHazards } from './hazards.js';
 import { buildMap, DEPTH } from './map.js';
-import { BREAK_SPEED, createBall, placeBall, stepBall } from './physics.js';
+import { BREAK_SPEED, createBall, placeBall, PUSH, stepBall, TOP_SPEED } from './physics.js';
 import { surfaceOf } from './surfaces.js';
 import { createTown } from './town.js';
 import { createTraffic } from './traffic.js';
@@ -28,6 +28,14 @@ import { groundAxes } from './view.js';
 export const STEP = 1 / 120;
 
 export const SPIKES = 100;
+
+/**
+ * Acceleration: held, it pushes harder and lifts the top speed (so the
+ * ball can hit what it couldn't), until the meter runs dry. The meter drains
+ * at `drain` a second while accelerating and refills at `refill` when not;
+ * run it right out and it can't be used again until it is back to `resume`.
+ */
+export const ACCEL = Object.freeze({ push: 1.9, top: 1.75, drain: 0.34, refill: 0.2, resume: 0.25 });
 
 /** How hard a landing has to be to hurt, and how much each kind of knock costs. */
 export const HURT = Object.freeze({ landing: 9.5, car: 2.6, drum: 3.2, flare: 34, foe: 1.6 });
@@ -65,6 +73,7 @@ export function createRun(GFX, { ball = createBall({ r: RADIUS }), map = createT
     district: null,
     sinking: 0,
     cooldown: { car: 0, flare: 0, drum: 0 },
+    accel: 1, winded: false,
   };
   hazards.place(0);
   placeBall(ball, ...start);
@@ -104,14 +113,14 @@ export function under(run) {
  * hard it hit anything, the knocks and what they cost, who it smashed, what
  * it picked up, and `outcome` — null, or 'blunted', 'squashed' or 'sunk'.
  */
-export function stepRun(run, push, dt = STEP, { live = true, moving = true } = {}) {
+export function stepRun(run, push, dt = STEP, { live = true, moving = true, boost = false } = {}) {
   const ball = run.ball;
   run.time += dt;
   run.hazards.place(run.time, dt);
   const honks = run.traffic.step(dt, live && moving ? ball : null);
   const events = run.hazards.step(dt, run.time, live && moving ? ball : null);
   const crowd = run.crowd.step(dt, run.time, live && moving ? ball : null);
-  const out = { impact: 0, hurt: 0, hits: [], honks, picked: [], gpu: null, sharpened: null, district: null, outcome: null, surface: null, smashes: [], knocks: [], shouts: [], cred: 0, combo: 0 };
+  const out = { accelerating: false, impact: 0, hurt: 0, hits: [], honks, picked: [], gpu: null, sharpened: null, district: null, outcome: null, surface: null, smashes: [], knocks: [], shouts: [], cred: 0, combo: 0 };
   if (!moving) return out;
 
   for (const k in run.cooldown) run.cooldown[k] -= dt;
@@ -121,7 +130,18 @@ export function stepRun(run, push, dt = STEP, { live = true, moving = true } = {
   const kind = surfaceOf(cell);
   out.surface = cell?.surface ?? null;
   const grip = cell ? kind.grip : 1;
-  const result = stepBall(ball, run.world, push[0] * grip, push[1] * grip, dt, { drag: cell ? kind.drag : 0.5 });
+  // Accelerating: only while pushing, and only with something in the meter.
+  const pushing = push[0] !== 0 || push[1] !== 0;
+  const on = live && boost && pushing && !run.winded && run.accel > 0;
+  run.accel = Math.max(0, Math.min(1, run.accel + (on ? -ACCEL.drain : ACCEL.refill) * dt));
+  if (run.accel <= 0) run.winded = true;
+  else if (run.winded && run.accel >= ACCEL.resume) run.winded = false;
+  out.accelerating = on;
+  const result = stepBall(ball, run.world, push[0] * grip, push[1] * grip, dt, {
+    drag: cell ? kind.drag : 0.5,
+    push: on ? PUSH * ACCEL.push : PUSH,
+    topSpeed: on ? TOP_SPEED * ACCEL.top : TOP_SPEED,
+  });
   // Never under the ground: if something shoved it there (a car into a kerb or a bank), up onto it again.
   const ground = run.map.heightAt(ball.x, ball.z);
   if (ground != null && ball.y < ground - 0.02) {

@@ -320,3 +320,36 @@ kbd {
   border-radius: 3px;
   background: linear-gradient(90deg, var(--gold) var(--done, 0%), rgba(255, 255, 255, 0.15) var(--done, 0%));
 }
+
+/* Acceleration: the meter under the spikes, and on a touch screen the button. */
+#accel-bar { margin-top: 6px; }
+#accel {
+  width: min(200px, 30vw);
+  height: 10px;
+  margin: 3px auto 0;
+  border-radius: 6px;
+  background: rgba(20, 24, 40, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+#accel-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(180deg, #ffe08a, #e8803a);
+}
+#accel.winded #accel-fill { background: #6a6a74; }
+#accel-touch {
+  display: none;
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(70px, env(safe-area-inset-bottom));
+  padding: 22px 20px;
+  font: 400 20px var(--display);
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: rgba(216, 64, 46, 0.85);
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  touch-action: none;
+}
+@media (pointer: coarse) { #top:not([hidden]) ~ #accel-touch { display: block; } }

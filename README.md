@@ -17,7 +17,7 @@ The sequel to [Metroll](https://github.com/h1ddenpr0cess20/metroll), and
 made of the games before it:
 
 - **the engine and the map** are [Petroll](https://github.com/h1ddenpr0cess20/petroll)'s: its renderer, ball physics, tiled map builder, traffic, hazards, minimap and HUD, and the layout of Petroleum Springs (which is tested to be rollable from end to end), re-dressed as a city of six districts;
-- **the ball, the smash rules, the cast, the quips and the band** are Metroll's: the morning star's head, whose spikes snap off as it is knocked about; speed is everything (`smash.js`); the sculpted people (`src/cast/`, mostly in new clothes, plus a Pause protester and a Eurocrat); the sarcasm; and the music, played live in Web Audio, in a different style for each part of the city;
+- **the ball, the smash rules, the cast, the quips and the band** are Metroll's: the morning star's head, whose spikes snap off as it is knocked about; speed is everything (`smash.js`); the sculpted people (`src/cast/`, mostly in new clothes, plus a Pause protester and a Eurocrat); the sarcasm; and the music, played live in Web Audio;
 - **the sculptor** is from the [Rock 'n' Roller](https://github.com/h1ddenpr0cess20/rocknroller-iii) games.
 
 It is satire of ideas, not of anyone in particular, and it is an
@@ -45,11 +45,12 @@ doesn't (`?renderer=webgl` pins it). Node 22.12 or later.
 |---|---|
 | <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>WASD</kbd> | Roll. Up always rolls up the screen, however the view is turned. |
 | Hold the mouse or a finger | Roll toward the pointer. The further it is from the ball, the harder the push. |
+| <kbd>Space</kbd> or <kbd>Shift</kbd> | **Accelerate**: hold for a harder push and a higher top speed, until the meter runs dry (it refills when you let go). The ACCELERATE button on a touch screen. |
 | <kbd>Q</kbd> <kbd>E</kbd>, or drag with the right mouse button | Turn the view. Dragging up and down tilts it. |
 | Mouse wheel, or <kbd>+</kbd> <kbd>−</kbd> | Zoom. |
 | Two fingers | Pinch to zoom, twist to turn, drag up or down to tilt. |
 | <kbd>C</kbd> | Put the view back. |
-| Gamepad | Left stick or d-pad rolls; right stick turns and tilts; shoulder buttons zoom; <kbd>A</kbd> starts, <kbd>Start</kbd> pauses. |
+| Gamepad | Left stick or d-pad rolls; right stick turns and tilts; shoulder buttons zoom; <kbd>A</kbd>, <kbd>X</kbd> or the right trigger accelerates; <kbd>Start</kbd> pauses. |
 | <kbd>P</kbd> / <kbd>Esc</kbd> | An intermission (pause). |
 | <kbd>M</kbd> | Sound on or off. |
 
@@ -70,6 +71,7 @@ bounce off them.
 Someone who isn't smashed is still worn down, so a doorman you can't hit hard
 enough can be hit twice. The Prophet of Doom takes a good deal more.
 
+- **Acceleration** is how you hit what you couldn't: hold it and the ball reaches speeds that smash anyone but the doorman and the Prophet. It runs dry in about three seconds, and refills in five.
 - **Cred** is the score. Smashes build a **combo** (×5 at most) that multiplies each one.
 - **Time horizon**, up in the corner, doubles every six smashes. The line goes up.
 - **Likes** are the little hearts lying about in lines. They are validation, and worth nothing.
@@ -97,10 +99,7 @@ browser (`metrlol.v1`), and the game plays the same with storage blocked.
 | ![The Compute Farm](docs/screenshots/compute-farm.jpg) | **The Compute Farm**: rolling dirt, token pumps nodding on their pads (do not stand under the head), a pipeline to roll along the top of to the end of the training run, the scaling-law derrick with a lift up to the platform, the bad takes tar pit with an island in it, the benchmark yard where the drums come after you. Accelerationists, VCs, podcasters. |
 | ![The Pause Compound](docs/screenshots/pause-compound.jpg) | **The Pause Compound**: tanks (the tall one has a lift), a ramp up to a catwalk, pipe racks overhead, and hot takes alley, where the steam comes up out of the floor in a wave you have to ride the gap behind. And ![the Prophet of Doom](docs/screenshots/prophet.jpg) **the Prophet of Doom**, who has predicted the end of the world every year since 2003 and has been, technically, early. |
 
-Each part of the city plays its own style of metal: a goth riff in Portland
-Heights, industrial in the Alignment District, hair metal in Brussels, thrash
-on the superhighway, nu metal on the compute farm, death metal in the
-compound, and a heavy anthem on the title.
+The music is Metroll's hardcore track (New York, 1989: a d-beat, no encores), start to finish.
 
 ## The cast
 

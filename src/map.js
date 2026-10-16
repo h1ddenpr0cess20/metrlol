@@ -296,7 +296,7 @@ export class TownMap {
   }
 
   /** Whether somebody could stand at (x, z): level firm ground with nothing solid on it or next to it, and not too near a foe already there. */
-  isOpen(x, z, maxH = 0.4) {
+  isOpen(x, z, maxH = 0.4, { near = false } = {}) {
     const i = Math.floor(x), j = Math.floor(z);
     const c = this.cell(i, j);
     if (!c || !isFlat(c) || c.h[0] > maxH || surfaceOf(c).sinks || surfaceOf(c).grip < 0.5) return false;
@@ -307,6 +307,11 @@ export class TownMap {
       if (Math.hypot(x - cy.x, z - cy.z) < cy.r + 0.55 && cy.y1 > c.h[0] - 0.1 && cy.y0 < c.h[0] + 1.6) return false;
     }
     for (const f of this.foes) if (Math.hypot(f.x - x, f.z - z) < 0.9) return false;
+    // Never where the ball is put down: the start, or a whetstone (unless that is what is being cleared).
+    if (!near) {
+      if (Math.hypot(x - this.start.x - 0.5, z - this.start.z - 0.5) < 3) return false;
+      for (const s of this.stones) if (Math.hypot(x - s.x, z - s.z) < 3) return false;
+    }
     return true;
   }
 

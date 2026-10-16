@@ -1,5 +1,5 @@
 import { createFoeMesh, FOES, KNOCKED_OUT } from './foes.js';
-import { collideBalls, createBall, PUSH, stepBall } from './physics.js';
+import { collideBalls, createBall, placeBall, PUSH, stepBall } from './physics.js';
 import { closingSpeed, resolveImpact } from './smash.js';
 
 /**
@@ -62,6 +62,35 @@ export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
 
   return {
     group, foes,
+
+    /**
+     * Somebody is standing where the ball is about to be put (a respawn, the
+     * start): everyone within `r` of (x, z) is moved just outside it, to
+     * somewhere they can stand, and made to call it home.
+     */
+    clear(x, z, r = 2.2) {
+      for (const f of foes) {
+        if (f.gone || f.dead) continue;
+        const b = f.ball;
+        const d = Math.hypot(b.x - x, b.z - z);
+        if (d >= r + b.r) continue;
+        const base = d > 1e-3 ? Math.atan2(b.z - z, b.x - x) : f.i;
+        let moved = false;
+        for (let ring = 0; ring < 3 && !moved; ring++) {
+          for (let k = 0; k < 16 && !moved; k++) {
+            const a = base + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 8);
+            const rr = r + b.r + 0.3 + ring * 0.8;
+            const nx = x + Math.cos(a) * rr, nz = z + Math.sin(a) * rr;
+            const ground = map.heightAt(nx, nz);
+            if (ground == null || !map.isOpen(nx, nz, Infinity, { near: true })) continue;
+            placeBall(b, nx, ground + b.r, nz);
+            f.home = [nx, ground + b.r, nz];
+            moved = true;
+          }
+        }
+        if (!moved) f.gone = true;
+      }
+    },
 
     /**
      * One step. `ball` is the player's, or null. Returns what happened to it

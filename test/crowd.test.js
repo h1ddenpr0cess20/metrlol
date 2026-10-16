@@ -8,7 +8,7 @@ import { FOES } from '../src/foes.js';
 import { TownMap } from '../src/map.js';
 import { placeBall } from '../src/physics.js';
 import { QUIPS, horizon, say } from '../src/quips.js';
-import { COMBO, createRun, SPIKES, STEP, stepRun } from '../src/run.js';
+import { COMBO, createRun, respawn, SPIKES, STEP, stepRun } from '../src/run.js';
 import { createTown } from '../src/town.js';
 import { resolveImpact } from '../src/smash.js';
 
@@ -173,4 +173,24 @@ test('the city has furniture to smash, and the signs and the statue are among it
   for (const box of first.boxes) box.solid = false;
   const again = createRun(GFX, { map: town, foes: false });
   assert.ok(again.breakables[0].boxes.every((b) => b.solid));
+});
+
+test('nobody is standing where the ball is put down: not at the start, not at a respawn', () => {
+  const near = (run) => run.crowd.foes.filter((f) => !f.gone && Math.hypot(f.ball.x - run.ball.x, f.ball.z - run.ball.z) < f.ball.r + run.ball.r);
+  const m = yard(['pauser', 3.5, 10.5], ['doomer', 3.9, 10.2]);
+  m.whetstone('Stone', 20.5, 10.5);
+  m.foe('striker', 20.9, 10.9, { range: 0 });
+  const run = createRun(GFX, { map: m });
+  assert.equal(near(run).length, 0, 'at the start');
+  assert.equal(run.crowd.foes.filter((f) => f.gone).length, 0, 'moved, not removed');
+  run.checkpoint = run.stones[0];
+  respawn(run);
+  assert.equal(near(run).length, 0, 'at the whetstone');
+  assert.ok(run.crowd.foes.every((f) => f.home && Math.hypot(f.home[0] - f.ball.x, f.home[2] - f.ball.z) < 0.01), 'they call it home now');
+});
+
+test('the crowd is never scattered over the start or a whetstone', () => {
+  const town = createTown();
+  const spots = [[town.start.x + 0.5, town.start.z + 0.5], ...town.stones.map((s) => [s.x, s.z])];
+  for (const f of town.foes) for (const [x, z] of spots) assert.ok(Math.hypot(f.x - x, f.z - z) > 2.2, `${f.kind} at ${f.x.toFixed(1)},${f.z.toFixed(1)}`);
 });

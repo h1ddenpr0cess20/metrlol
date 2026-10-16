@@ -83,6 +83,7 @@ export function createRun(GFX, { ball = createBall({ r: RADIUS }), map = createT
   };
   hazards.place(0);
   placeBall(ball, ...start);
+  crowd.clear(start[0], start[2]);
   return run;
 }
 
@@ -93,12 +94,14 @@ export function respawn(run) {
   else placeBall(run.ball, ...run.safe);
   run.spikes = SPIKES;
   run.sinking = 0;
+  run.crowd.clear(run.ball.x, run.ball.z);
 }
 
 /** Back onto the last firm ground it crossed (after the tar). */
 export function putBack(run) {
   placeBall(run.ball, ...run.safe);
   run.sinking = 0;
+  run.crowd.clear(run.ball.x, run.ball.z);
 }
 
 /** The surface the ball is rolling on, if it's on the ground and not on something. */

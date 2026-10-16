@@ -1,5 +1,6 @@
 import { World } from './physics.js';
 import { MODELS } from './models/index.js';
+import { BREAKABLE } from './breakables.js';
 import { FACADES } from './paint.js';
 import { surfaceOf } from './surfaces.js';
 
@@ -47,6 +48,8 @@ export class TownMap {
     this.models = [];
     this.buildings = [];
     this.foes = [];
+    this.breakables = [];
+    this._tag = null;
   }
 
   cell(x, z) {
@@ -132,31 +135,57 @@ export class TownMap {
    * paint `paint` (a vehicle's). What in it is solid goes into the solids
    * and cylinders, and its lights into the lamps.
    */
-  place(name, x, z, { turn = 0, angle = turn * Math.PI / 2, y = null, scale = 1, paint = null } = {}) {
+  place(name, x, z, { turn = 0, angle = turn * Math.PI / 2, y = null, scale = 1, paint = null, fixed = false } = {}) {
     const def = MODELS[name];
     if (!def) throw new Error(`${this.name}: no model called ${name}`);
     const base = y ?? this.heightAt(x, z) ?? 0;
     const c = Math.cos(angle), s = Math.sin(angle);
     // Local (lx, lz) to the map: turned about y (+z toward +x), then moved.
     const at = (lx, lz) => [x + (lx * c + lz * s) * scale, z + (-lx * s + lz * c) * scale];
-    for (const col of def.colliders ?? []) {
-      if (col.cyl) {
-        const [cx, cz, r, y0, y1] = col.cyl;
-        const [wx, wz] = at(cx, cz);
-        this.cylinder(wx, wz, r * scale, base + y0 * scale, base + y1 * scale);
-      } else {
-        const [x0, y0, z0, x1, y1, z1] = col.box;
-        const corners = [at(x0, z0), at(x1, z0), at(x0, z1), at(x1, z1)];
-        this.solid(Math.min(...corners.map((q) => q[0])), base + y0 * scale, Math.min(...corners.map((q) => q[1])),
-          Math.max(...corners.map((q) => q[0])), base + y1 * scale, Math.max(...corners.map((q) => q[1])));
+    const entry = { name, x, z, y: base, angle, scale, paint };
+    const build = () => {
+      for (const col of def.colliders ?? []) {
+        if (col.cyl) {
+          const [cx, cz, r, y0, y1] = col.cyl;
+          const [wx, wz] = at(cx, cz);
+          this.cylinder(wx, wz, r * scale, base + y0 * scale, base + y1 * scale);
+        } else {
+          const [x0, y0, z0, x1, y1, z1] = col.box;
+          const corners = [at(x0, z0), at(x1, z0), at(x0, z1), at(x1, z1)];
+          this.solid(Math.min(...corners.map((q) => q[0])), base + y0 * scale, Math.min(...corners.map((q) => q[1])),
+            Math.max(...corners.map((q) => q[0])), base + y1 * scale, Math.max(...corners.map((q) => q[1])));
+        }
       }
-    }
+    };
+    // Street furniture goes through if the ball comes at it hard enough.
+    if (BREAKABLE[name] && def.colliders?.length && !fixed) this.smashable({ kind: 'model', name, ...BREAKABLE[name], model: entry }, build);
+    else build();
     for (const [lx, ly, lz, colour, reach] of def.lights ?? []) {
       const [wx, wz] = at(lx, lz);
       this.lamp(wx, wz, { colour, reach, height: ly * scale, y: base });
     }
-    this.models.push({ name, x, z, y: base, angle, scale, paint });
+    this.models.push(entry);
     return this;
+  }
+
+  /**
+   * Something the ball can smash: `build` adds the solids and cylinders it is
+   * made of, and they are kept apart (tagged) so they can be taken out of the
+   * world when it goes. `spec` is `{ kind, at, hype, ... }` (see `breakables.js`);
+   * the footprint and height are worked out from what `build` made.
+   */
+  smashable(spec, build) {
+    const id = this.breakables.length;
+    const s0 = this.solids.length, c0 = this.cylinders.length;
+    this._tag = id;
+    build();
+    this._tag = null;
+    const parts = [...this.solids.slice(s0).map((s) => ({ x0: s.min[0], x1: s.max[0], z0: s.min[2], z1: s.max[2], y0: s.min[1], y1: s.max[1] })),
+      ...this.cylinders.slice(c0).map((q) => ({ x0: q.x - q.r, x1: q.x + q.r, z0: q.z - q.r, z1: q.z + q.r, y0: q.y0, y1: q.y1 }))];
+    const lo = (k) => Math.min(...parts.map((p) => p[k])), hi = (k) => Math.max(...parts.map((p) => p[k]));
+    const item = { id, ...spec, x: (lo('x0') + hi('x1')) / 2, z: (lo('z0') + hi('z1')) / 2, r: Math.max(hi('x1') - lo('x0'), hi('z1') - lo('z0')) / 2, base: lo('y0'), top: hi('y1') };
+    this.breakables.push(item);
+    return item;
   }
 
   /** A prop: something built from plain shapes (see `structures.js`). */
@@ -167,13 +196,13 @@ export class TownMap {
 
   /** A box nothing rolls through, in world coordinates. */
   solid(x0, y0, z0, x1, y1, z1) {
-    this.solids.push({ min: [x0, y0, z0], max: [x1, y1, z1] });
+    this.solids.push({ min: [x0, y0, z0], max: [x1, y1, z1], tag: this._tag });
     return this;
   }
 
   /** An upright cylinder nothing rolls through (a tank, a trunk, a post), standing on `y0` up to `y1`; it can be stood on. */
   cylinder(x, z, r, y0, y1) {
-    this.cylinders.push({ x, z, r, y0, y1 });
+    this.cylinders.push({ x, z, r, y0, y1, tag: this._tag });
     return this;
   }
 
@@ -588,14 +617,18 @@ export function buildMap(map) {
   }
 
   world.finish();
-  for (const s of map.solids) world.addStatic({ min: [...s.min], max: [...s.max] });
-  for (const cy of map.cylinders) world.addCylinder({ ...cy });
+  // What can be smashed keeps hold of its own solids, by tag, to take them out of the world.
+  const tagged = new Map();
+  const keep = (tag, box) => { if (tag != null) tagged.set(tag, [...(tagged.get(tag) ?? []), box]); };
+  for (const s of map.solids) keep(s.tag, world.addStatic({ min: [...s.min], max: [...s.max] }));
+  for (const cy of map.cylinders) keep(cy.tag, world.addCylinder({ ...cy }));
   const typed = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, new Float32Array(v)]));
   return {
     tops: new Map([...tops].map(([k, v]) => [k, typed(v)])),
     walls: new Map([...walls].map(([k, v]) => [k, typed(v)])),
     world,
     light,
+    tagged,
   };
 }
 

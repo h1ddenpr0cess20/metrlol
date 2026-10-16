@@ -74,11 +74,12 @@ enough can be hit twice. The Prophet of Doom takes a good deal more.
 - **Acceleration** is how you hit what you couldn't: hold it and the ball reaches speeds that smash anyone but the doorman and the Prophet. It runs dry in about three seconds, and refills in five.
 - **Cred** is the score. Smashes build a **combo** (×5 at most) that multiplies each one.
 - **Time horizon**, up in the corner, doubles every six smashes. The line goes up.
+- **Props** go too: bins, benches, mailboxes, signs, hydrants, street lamps, trees, pumps, parked cars, and the bronze paperclip in the plaza. Each has a speed it takes (a cone 2.5, a bin 4, a lamp post 9, the paperclip 14), and is as solid as a wall below it. They are worth a little cred each, and come back with a new run.
 - **Likes** are the little hearts lying about in lines. They are validation, and worth nothing.
 
 ### Staying in one piece
 
-The ball starts with 100 **spikes**, and you can watch them snap off. Hard
+The ball starts with 100 **spikes**, and you can watch them snap off. It is a lump of forged steel and takes a beating: every knock costs half what it would. Hard
 landings, cars, rolling drums, the steam in hot takes alley and the people it
 fails to smash take them away. At nothing the ball is **blunted**, and it is
 back at the last **whetstone** it rolled over, sharpened. A token pump's head

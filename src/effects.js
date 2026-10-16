@@ -5,6 +5,8 @@
  * once or twice, and shrinks away.
  */
 
+import { model } from './models/library.js';
+
 const GRAVITY = 18;
 
 function shardGeometry(GFX) {
@@ -98,6 +100,15 @@ export function createEffects(GFX, scene) {
         const [ox, oy, oz] = outward(1.2, 2);
         spawn(new GFX.Mesh(chaff, chaffMaterial), { x, y, z, vx: ox, vy: oy, vz: oz, life: 0.5 + Math.random() * 0.3, spin: 14, drag: 2, floaty: 0.5, bounce: 0 });
       }
+    },
+
+    /** A prop smashed: the model itself, thrown away from the ball, tumbling and shrinking. */
+    debris(name, { x, y, z, scale = 1 }, vx, vz) {
+      const { geometry, materials } = model(GFX, name);
+      const m = new GFX.Mesh(geometry, materials);
+      m.scale.setScalar(scale);
+      m.castShadow = true;
+      spawn(m, { x, y: y + 0.3, z, vx: vx * 0.6, vy: 4.5 + Math.hypot(vx, vz) * 0.25, vz: vz * 0.6, life: 1.4, spin: 10 });
     },
 
     /** Glitter, for a golden seed. */

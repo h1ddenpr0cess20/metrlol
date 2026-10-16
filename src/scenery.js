@@ -79,7 +79,8 @@ export function createWorldMeshes(GFX, map, built) {
   country(kit, map);
   group.add(kit.build({ name: 'decks-and-country' }));
   group.add(land(GFX, map));
-  group.add(createPlaced(GFX, map, built.light));
+  const placed = createPlaced(GFX, map, built.light);
+  group.add(placed);
   group.add(createBuildings(GFX, map));
 
   const occluders = roofKits.map((k) => {
@@ -105,6 +106,16 @@ export function createWorldMeshes(GFX, map, built) {
         m.material.depthWrite = o.fade > 0.95;
       }
     }
+  };
+  /** A prop smashed: gone from view. */
+  group.userData.smash = (item) => {
+    if (item.kind === 'model') placed.userData.remove(item.model);
+    else if (structures.placards.has(item.prop)) structures.placards.get(item.prop).visible = false;
+  };
+  /** Every prop back where it was (a new run of the world). */
+  group.userData.restoreProps = () => {
+    placed.userData.restore();
+    for (const piece of structures.placards.values()) piece.visible = true;
   };
   return group;
 }

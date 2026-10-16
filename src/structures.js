@@ -501,7 +501,7 @@ const WORDS = {
 };
 
 /**
- * The structures, drawn: one kit for the steelwork, the textured panels by
+ * The structures, drawn (`placards` is each sign on posts, by its prop, a group to hide when it is smashed): one kit for the steelwork, the textured panels by
  * texture, the signs, and the roofs (each its own, to fade while the
  * ball is under it). Lights some of them carry go onto the map.
  */
@@ -515,6 +515,7 @@ export function drawStructures(GFX, map, light) {
   };
   const t = panels(light);
   const extras = [], roofs = [];
+  const placards = new Map();
   // The lights are on the map already (`structureLights`): drawing doesn't add them again.
   const quiet = Object.create(map);
   quiet.lamp = () => quiet;
@@ -524,9 +525,17 @@ export function drawStructures(GFX, map, light) {
     const y = p.y ?? map.heightAt(p.x, p.z) ?? 0;
     const roof = createKit(GFX);
     // The fence goes all the way round: it gets a kit of its own.
-    draw(p.type === 'fence' ? kitAt(-100, -100) : kitAt(p.x, p.z), t, p, y, quiet, roof);
+    // A sign on posts goes through if the ball comes at it hard enough: it is a group of its own, to hide.
+    const own = p.type === 'placard' ? createKit(GFX) : null;
+    draw(own ?? (p.type === 'fence' ? kitAt(-100, -100) : kitAt(p.x, p.z)), t, p, y, quiet, roof);
     if (!roof.empty) roofs.push(roof);
-    if (WORDS[p.type]) extras.push(...WORDS[p.type](GFX, p, y));
+    const signs = WORDS[p.type] ? WORDS[p.type](GFX, p, y) : [];
+    if (own) {
+      const piece = new GFX.Group();
+      piece.name = 'placard';
+      piece.add(own.build({ name: 'placard-posts' }), ...signs);
+      placards.set(p, piece);
+    } else extras.push(...signs);
   });
   const group = new GFX.Group();
   group.name = 'structures';
@@ -544,7 +553,8 @@ export function drawStructures(GFX, map, light) {
     group.add(mesh);
   }
   for (const e of extras) group.add(e);
-  return { group, roofs };
+  for (const piece of placards.values()) group.add(piece);
+  return { group, roofs, placards };
 }
 
 /** The lights the structures carry, put on the map before it is built (so they are baked into the ground). */

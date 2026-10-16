@@ -90,6 +90,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
     if (fresh) saved = storage.clear();
     scene.remove(run.traffic.group, run.hazards.group, run.crowd.group, pickups.group);
     run = createRun(GFX, { found: saved.found, ball: run.ball, map: run.map });
+    world.userData.restoreProps();
     scene.add(run.traffic.group, run.hazards.group, run.crowd.group);
     pickups = createPickups(GFX, run);
     scene.add(pickups.group);
@@ -188,6 +189,15 @@ export function createGame({ stage, hud, input, audio, storage }) {
       } else {
         hud.horizon(horizon(run.smashed));
       }
+    }
+    for (const p of out.breaks) {
+      const away = [(p.x - b.x), (p.z - b.z)], l = Math.hypot(away[0], away[1]) || 1;
+      const sp = Math.hypot(b.vx, b.vz);
+      if (p.kind === 'model') effects.debris(p.name, { ...p.model, y: p.base }, away[0] / l * sp, away[1] / l * sp);
+      effects.sparks(p.x, p.base + 0.4, p.z, 8);
+      world.userData.smash(p);
+      audio.smash(false);
+      hud.cred(run.cred, run.combo);
     }
     for (const s of out.picked) {
       likesGot++;

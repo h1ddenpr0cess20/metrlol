@@ -14,13 +14,30 @@ export function createPlaced(GFX, map, light) {
   const group = new GFX.Group();
   group.name = 'placed';
   // By model, and by a 16-tile square of the map, so what's out of view isn't drawn.
-  const byName = new Map();
+  const chunks = new Map();
+  const keyOf = (m) => `${m.name}|${Math.floor(m.x / CHUNK)},${Math.floor(m.z / CHUNK)}`;
   for (const m of map.models) {
-    const key = `${m.name}|${Math.floor(m.x / CHUNK)},${Math.floor(m.z / CHUNK)}`;
-    if (!byName.has(key)) byName.set(key, []);
-    byName.get(key).push(m);
+    const key = keyOf(m);
+    if (!chunks.has(key)) chunks.set(key, { name: m.name, all: [], now: [], mesh: null });
+    chunks.get(key).all.push(m);
   }
-  for (const [key, copies] of byName) group.add(mergeCopies(GFX, key.split('|')[0], copies, light));
+  const draw = (chunk) => {
+    if (chunk.mesh) group.remove(chunk.mesh);
+    chunk.mesh = chunk.now.length ? mergeCopies(GFX, chunk.name, chunk.now, light) : null;
+    if (chunk.mesh) group.add(chunk.mesh);
+  };
+  for (const chunk of chunks.values()) { chunk.now = chunk.all.slice(); draw(chunk); }
+  /** One copy smashed: its chunk is merged again without it. */
+  group.userData.remove = (m) => {
+    const chunk = chunks.get(keyOf(m));
+    if (!chunk || !chunk.now.includes(m)) return;
+    chunk.now = chunk.now.filter((c) => c !== m);
+    draw(chunk);
+  };
+  /** Everything back where it was. */
+  group.userData.restore = () => {
+    for (const chunk of chunks.values()) if (chunk.now.length !== chunk.all.length) { chunk.now = chunk.all.slice(); draw(chunk); }
+  };
   return group;
 }
 

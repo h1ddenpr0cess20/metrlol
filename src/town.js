@@ -1,3 +1,4 @@
+import { BREAKABLE } from './breakables.js';
 import { windowLamps } from './buildings.js';
 import { structureLights } from './structures.js';
 import { TownMap } from './map.js';
@@ -167,12 +168,13 @@ export function createTown() {
   return c;
 }
 
-/** A freestanding sign with words on both faces, and solid, standing on (x, z). */
+/** A freestanding sign with words on both faces, solid unless the ball comes at it hard, standing on (x, z). */
 function placard(c, x, z, text, { facing = 0, w = 1.8, h = 1.1, bg, fg, size, y = null } = {}) {
   c.prop('placard', x, z, { text, facing, w, h, bg, fg, size, y });
+  const prop = c.props.at(-1);
   const base = y ?? c.heightAt(x, z) ?? 0;
   const ex = facing % 2 === 0 ? w / 2 : 0.1, ez = facing % 2 === 0 ? 0.1 : w / 2;
-  c.solid(x - ex, base, z - ez, x + ex, base + 0.5 + h, z + ez);
+  c.smashable({ kind: 'placard', name: 'placard', ...BREAKABLE.placard, prop }, () => c.solid(x - ex, base, z - ez, x + ex, base + 0.5 + h, z + ez));
 }
 
 /** The signs: the commune's, the Pause protest's, the Eurocrats', the compute farm's. */
@@ -491,7 +493,7 @@ function brussels(c) {
   // North of the forecourt: the club's yard, with the queue.
   c.flat(96, 8, 15, 24, 0, { surface: 'gravel' });
   for (const [x, z, col, r] of [[99, 12, '#8a3a26', 0.3], [104, 11, '#4a6a8a', 1.2], [99, 18, '#6a7a3a', 2.1], [106, 19, '#8a8a8e', 0.6], [101, 26, '#a05a2a', 1.6]]) {
-    c.place('junker', x, z, { angle: r * 1.3 });
+    c.place('junker', x, z, { angle: r * 1.3, fixed: true });
     c.cylinder(x, z, 0.9, 0, 0.9);
     void col;
   }

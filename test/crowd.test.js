@@ -138,3 +138,39 @@ test('the time horizon doubles every few smashes, and the ball always has someth
   for (const k of Object.keys(QUIPS).filter((k) => k !== 'district')) assert.ok(say(k).length > 3, k);
   for (const d of createTown().districts) assert.ok(say('district', { district: d.name }).length > 3, d.name);
 });
+
+test('street furniture goes through if the ball comes at it hard enough, and is a wall if it doesn\'t', () => {
+  const props = () => {
+    const m = yard();
+    m.place('bin', 12.5, 10.5).place('bench', 12.5, 14.5);
+    return createRun(GFX, { map: m, foes: false });
+  };
+  const fast = props();
+  assert.equal(fast.breakables.length, 2);
+  assert.ok(fast.breakables.every((p) => p.boxes.length > 0 && !p.broken));
+  const outs = rollAt(fast, 8, 2);
+  assert.equal(outs.flatMap((o) => o.breaks).length, 1);
+  const bin = fast.breakables.find((p) => p.name === 'bin');
+  assert.ok(bin.broken && bin.boxes.every((b) => !b.solid));
+  assert.equal(fast.cred, bin.hype);
+  assert.ok(fast.ball.x > 14, 'it went through');
+
+  const slow = props();
+  rollAt(slow, 2, 4);
+  assert.equal(slow.broke, 0);
+  assert.ok(slow.ball.x < 12.5, 'it stopped at the bin');
+});
+
+test('the city has furniture to smash, and the signs and the statue are among it', () => {
+  const town = createTown();
+  assert.ok(town.breakables.length > 80, `${town.breakables.length}`);
+  const run = createRun(GFX, { map: town, foes: false });
+  for (const p of run.breakables) assert.ok(p.boxes.length > 0 && p.r > 0 && p.top > p.base, `${p.name} at ${p.x},${p.z}`);
+  const kinds = new Set(town.breakables.map((p) => p.name));
+  for (const k of ['streetlamp', 'tree', 'bench', 'placard', 'statue', 'gaspump']) assert.ok(kinds.has(k), k);
+  // Smashing it takes it out of the world, and a new run puts it back.
+  const first = run.breakables[0];
+  for (const box of first.boxes) box.solid = false;
+  const again = createRun(GFX, { map: town, foes: false });
+  assert.ok(again.breakables[0].boxes.every((b) => b.solid));
+});

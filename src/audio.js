@@ -150,7 +150,7 @@ export function createAudio() {
       tone({ at: 0.03, freq: 1240, to: 400, length: 0.14, type: 'triangle', gain: 0.07 });
     },
 
-    /** Metal: a drum, a pump, a pumpjack. */
+    /** Metal: a reel, a post, a stamp. */
     clunk(speed = 6) {
       const k = Math.min(1, speed / 8);
       tone({ freq: 220, to: 160, length: 0.25, type: 'triangle', gain: 0.25 * k });
@@ -171,7 +171,7 @@ export function createAudio() {
       for (let i = 0; i < 6; i++) tone({ at: i * 0.12, freq: 140 + Math.random() * 90, to: 300, length: 0.09, gain: 0.25 });
     },
 
-    /** A flare going up under it: the hiss and the whump. */
+    /** A hot take going up under it: the hiss and the whump. */
     sizzle() {
       burst({ length: 0.5, type: 'bandpass', freq: 2800, q: 1.4, gain: 0.5 });
       tone({ freq: 110, to: 60, length: 0.3, gain: 0.35 });

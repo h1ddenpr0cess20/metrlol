@@ -10,13 +10,13 @@ and the reply guys, who are everywhere. Roll into them fast enough and they
 are smashed; too slowly and they bounce off, and it costs you spikes. Each
 time, the ball says something unkind about it.
 
-Somewhere in all of it are **22 golden GPUs**. Every side of the argument
+Somewhere in all of it are **42 golden GPUs**. Every side of the argument
 wants them. The ball is keeping them.
 
 The sequel to [Metroll](https://github.com/h1ddenpr0cess20/metroll), and
 made of the games before it:
 
-- **the engine and the map** are [Petroll](https://github.com/h1ddenpr0cess20/petroll)'s: its renderer, ball physics, tiled map builder, traffic, hazards, minimap and HUD, and the layout of Petroleum Springs (which is tested to be rollable from end to end), re-dressed as a city of six districts;
+- **the engine** is [Petroll](https://github.com/h1ddenpr0cess20/petroll)'s: its renderer, ball physics, tiled map builder, traffic, hazards, minimap and HUD. The map is Metrlol's own: a city of nine parts, 256 tiles each way (four times the area of Petroleum Springs), with a few of Petroll's set pieces in it (the car park up to the roof, the skate park, the consensus maze, the footbridge, the plank to the island), and like Petroll's it is tested to be rollable from end to end;
 - **the ball, the smash rules, the cast, the quips and the band** are Metroll's: the morning star's head, whose spikes snap off as it is knocked about; speed is everything (`smash.js`); the sculpted people (`src/cast/`, mostly in new clothes, plus a Pause protester and a Eurocrat); the sarcasm; and the music, played live in Web Audio;
 - **the sculptor** is from the [Rock 'n' Roller](https://github.com/h1ddenpr0cess20/rocknroller-iii) games.
 
@@ -74,31 +74,36 @@ enough can be hit twice. The Prophet of Doom takes a good deal more.
 - **Acceleration** is how you hit what you couldn't: hold it and the ball reaches speeds that smash anyone but the doorman and the Prophet. It runs dry in about three seconds, and refills in five.
 - **Cred** is the score. Smashes build a **combo** (×5 at most) that multiplies each one.
 - **Time horizon**, up in the corner, doubles every six smashes. The line goes up.
-- **Props** go too: bins, benches, mailboxes, signs, hydrants, street lamps, trees, pumps, parked cars, and the bronze paperclip in the plaza. Each has a speed it takes (a cone 2.5, a bin 4, a lamp post 9, the paperclip 14), and is as solid as a wall below it. They are worth a little cred each, and come back with a new run.
+- **Props** go too: bins, benches, mailboxes, signs, hydrants, street lamps, trees, charging posts, parked cars, and the bronze paperclip in the plaza. Each has a speed it takes (a cone 2.5, a bin 4, a lamp post 9, the paperclip 14), and is as solid as a wall below it. They are worth a little cred each, and come back with a new run.
 - **Likes** are the little hearts lying about in lines. They are validation, and worth nothing.
 
 ### Staying in one piece
 
 The ball starts with 100 **spikes**, and you can watch them snap off. It is a lump of forged steel and takes a beating: every knock costs half what it would. Hard
-landings, cars, rolling drums, the steam in hot takes alley and the people it
-fails to smash take them away. At nothing the ball is **blunted**, and it is
-back at the last **whetstone** it rolled over, sharpened. A token pump's head
-coming down on it blunts it outright. The bad takes tar pit swallows it, and
-it's put back on the last firm ground.
+landings, cars, cable reels rolling after it, the hot takes coming up out of
+the floor and the people it fails to smash take them away. At nothing the ball
+is **blunted**, and it is back at the last **whetstone** it rolled over,
+sharpened. A rubber stamp coming down on it blunts it outright. The data lake
+and the sea swallow it, and it's put back on the last firm ground.
 
 What you've found, the last whetstone and the time so far are kept in the
 browser (`metrlol.v1`), and the game plays the same with storage blocked.
 
 ## Metrlol
 
+Nine parts of town, three across and three down, the superhighway down the east side, and the far side of it.
+
 | | |
 |---|---|
-| ![Portland Heights](docs/screenshots/portland.jpg) | **Portland Heights**: the suburbs, and home. Co-op houses, a drained pool that is now the community garden, the consensus maze (still voting on the exit), a skate park with a quarter pipe you need a run-up for. The commune, the anarchists, the theorists, the doomscrollers. |
-| ![The Alignment District](docs/screenshots/plaza.jpg) | **The Alignment District**: the Longterm Institute and the alley behind it, a group house with a car park up to the roof, the plaza where the Pause protest has been for a year (a bronze paperclip on a plinth in the middle of it), a building site whose crane has been paused since March. Doomers, effective altruists, rationalists, safety researchers, reply guys. |
-| ![Brussels-sur-Mer](docs/screenshots/brussels.jpg) | **Brussels-sur-Mer**: a fuel-tax station (+21% VAT), a regulatory sandbox you have to roll through, the strike picket, the Euro shop (closed, lunch), a footbridge over the superhighway to the cookie banner on the hill, and behind it a club with a queue that has been there since Thursday. Eurocrats, strikers, scooter commuters, ravers, the doorman (the policy is no). |
-| | **The Information Superhighway**: four lanes of trucks and tankers in both directions. Nobody brakes. Nobody reads. |
-| ![The Compute Farm](docs/screenshots/compute-farm.jpg) | **The Compute Farm**: rolling dirt, token pumps nodding on their pads (do not stand under the head), a pipeline to roll along the top of to the end of the training run, the scaling-law derrick with a lift up to the platform, the bad takes tar pit with an island in it, the benchmark yard where the drums come after you. Accelerationists, VCs, podcasters. |
-| ![The Pause Compound](docs/screenshots/pause-compound.jpg) | **The Pause Compound**: tanks (the tall one has a lift), a ramp up to a catwalk, pipe racks overhead, and hot takes alley, where the steam comes up out of the floor in a wave you have to ride the gap behind. And ![the Prophet of Doom](docs/screenshots/prophet.jpg) **the Prophet of Doom**, who has predicted the end of the world every year since 2003 and has been, technically, early. |
+| ![Portland Heights](docs/screenshots/portland.jpg) | **Portland Heights**, north-west: the suburbs, and home. Co-op houses, a drained pool that is now the community garden, a tiny house village, the consensus maze (still voting on the exit), a skate park with a quarter pipe you need a run-up for, the commune's long house and allotments, the food co-op with a loading ramp up to its roof, the park. The commune, the anarchists, the theorists, the doomscrollers. |
+| ![The Alignment District](docs/screenshots/plaza.jpg) | **The Alignment District**, north: the Longterm Institute and the alley behind it, a group house with a car park up to the roof, **the slippery slope** (oil all the way up: take a run at it), the doom clock and the prediction market round it, the plaza where the Pause protest has been for a year (a bronze paperclip on a plinth in the middle of it), the SHUT IT DOWN rally stage, the Effective Altruism Center, a building site whose crane has been paused since March. Doomers, effective altruists, rationalists, forecasters, safety researchers. |
+| ![The Ivory Tower](docs/screenshots/ivory-tower.jpg) | **The Ivory Tower**, north-east: the campus. The library (closed for training), the lecture hall sunk in the quad, **the trolley problem**, going round and round, and the tower itself: a ramp three times round it to the top, where you are above it all. Rationalists, researchers, theorists, purists, longtermists. |
+| ![The Pause Compound](docs/screenshots/pause-compound.jpg) | **The Pause Compound**, west: behind a fence, the tank of doom with a lift up its side, a ramp and a catwalk, the barracks, the bunker sunk in the yard, and **hot takes alley**, where they come up out of the floor in a wave you have to ride the gap behind. And ![the Prophet of Doom](docs/screenshots/prophet.jpg) **the Prophet of Doom**, who has predicted the end of the world every year since 2003 and has been, technically, early. |
+| ![The Timeline](docs/screenshots/timeline.jpg) | **The Timeline**, the middle: downtown. Towers with screens on them (TRENDING: YOU), **Ratio Square**, the echo chamber (a round room in a round room), the discourse pit, **the infinite scroll** (a walkway in the air, over the street, to the end of it, with a troll under it), and the engagement farm, where the likes are grown in rows. Reply guys, engagement farmers, Substack writers, thought leaders, gatekeepers. |
+| ![Hype Valley](docs/screenshots/hype-valley.jpg) | **Hype Valley**, east: **the hype cycle**, in hills, lit all along: up the peak of inflated expectations, down into the trough of disillusionment, up the slope of enlightenment to the plateau of productivity, and off the plateau a footbridge over the superhighway to the far side. The garage where it all started, the podcast studio (hour 3), VC row, and the infinity pool on top of Sand Hill. Accelerationists, VCs, podcasters. |
+| ![Brussels-sur-Mer](docs/screenshots/brussels.jpg) | **Brussels-sur-Mer**, south-west: the Commission, **the stamping hall** (rubber stamps coming down on the lane: in to the end and back out), a charging station (+21% VAT), the Euro shop (closed, lunch) with a ramp to its roof, a regulatory sandbox with actual sand in it, the strike picket, a club with a queue that has been there since Thursday, the Grand-Place, and the seafront: the beach, the pier, and the sea, which you sink in. Eurocrats, strikers, scooter commuters, ravers, the doorman (the policy is no). |
+| ![The Compute Farm](docs/screenshots/compute-farm.jpg) | **The Compute Farm**, south-east: the server halls and the hot aisle between them, the cooling towers (a lift up the far one), the chilled water main to roll along the top of, **the hockey stick** (flat for a long way, then LINE GO UP), the data lake with an island in it, the cable yard where the reels come after you, the substation. Accelerationists, VCs, podcasters. |
+| | **The Information Superhighway**: four lanes of trucks and cars in both directions, through tunnels at each end. Nobody brakes. Nobody reads. On **the far side**, the cookie banner on its hill. |
 
 The music is Metroll's hardcore track (New York, 1989: a d-beat, no encores), start to finish.
 
@@ -120,8 +125,8 @@ the Eurocrat are new. Who they are, and what they shout, is in `src/foes.js`.
 | `src/cast/` | The people (`person.js`, `humanoid.js`, the rig and the skin), their library and bake worker. |
 | `src/foes.js`, `src/crowd.js`, `src/smash.js` | Who is in the way, how they walk and come at the ball, and what a meeting costs. |
 | `src/quips.js` | What the ball says, and the time horizon. |
-| `src/map.js`, `src/town.js` | The map: a grid of tiles, with road paint, props, solids, traffic, hazards, pickups, signs and the crowd on top of them; and Metrlol, district by district. |
-| `src/structures.js`, `src/models/` | What stands on the map: signs and billboards with words on them, tanks, pumps; sculpted street furniture, vehicles, whetstones, likes and GPUs. |
+| `src/map.js`, `src/town.js` | The map: a grid of tiles, with road paint, props, solids, traffic, hazards, pickups, signs and the crowd on top of them; and Metrlol, part of town by part of town. |
+| `src/structures.js`, `src/models/` | What stands on the map: signs, screens and billboards with words on them, tanks, the mast, the crane, parasols; sculpted street furniture, vehicles, charging posts, rubber stamps, cable reels, whetstones, likes and GPUs. |
 | `src/run.js` | The world as it runs, with nothing drawn: the rules for spikes, smashes, combos, pickups. The game draws it; the tests drive it. |
 | `src/music.js`, `src/audio.js` | Metroll's band, and every sound effect, synthesised. |
 
@@ -129,7 +134,7 @@ the Eurocrat are new. Who they are, and what they shout, is in `src/foes.js`.
 |---|---|
 | `npm run dev` | Vite dev server (and `/preview.html`: `?foes=pauser,eurocrat`, `?foes=all`, `?hurt=0.5`) |
 | `npm run build` | Bundles to `dist/` |
-| `npm test` | `node:test`: physics, the map builder, the city, the traffic, the hazards, the crowd and the smash rules, and an autopilot that has to find all 22 golden GPUs in one go without being blunted |
+| `npm test` | `node:test`: physics, the map builder, the city, the traffic, the hazards, the crowd and the smash rules, and an autopilot that has to find all 42 golden GPUs in one go without being blunted |
 | `npm run lint` | ESLint |
 
 In the browser console, `metrlol.debug.teleport(x, z)` puts the ball anywhere

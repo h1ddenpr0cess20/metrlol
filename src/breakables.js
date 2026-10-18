@@ -14,7 +14,7 @@ export const BREAKABLE = Object.freeze({
   placard: { at: 5, hype: 20 },
   bench: { at: 5, hype: 15 },
   hydrant: { at: 6, hype: 20 },
-  gaspump: { at: 8, hype: 30 },
+  charger: { at: 8, hype: 30 },
   dumpster: { at: 8, hype: 30 },
   streetlamp: { at: 9, hype: 25 },
   tree: { at: 10, hype: 30 },

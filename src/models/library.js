@@ -15,7 +15,7 @@ export function bakeAll(GFX, onProgress = () => {}) {
     onProgress(1);
     return Promise.resolve();
   }
-  // Biggest first, so no worker is left with a pumpjack at the end.
+  // Biggest first, so no worker is left with a truck at the end.
   const queue = names.slice().sort((a, b) => (MODELS[a].cell ?? 0.02) - (MODELS[b].cell ?? 0.02));
   const total = queue.length;
   let done = 0;

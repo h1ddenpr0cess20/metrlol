@@ -4,40 +4,54 @@ import { structureLights } from './structures.js';
 import { TownMap } from './map.js';
 
 /**
- * The whole world, one map: Metrlol. No levels — it is all there from the
- * start, and the ball can roll anywhere it can get to. It is the layout of
- * Petroll's Petroleum Springs, which is tested to be rollable end to end, in
- * new clothes and with a crowd in it:
+ * The whole world, one map: Metrlol, a city of takes. No levels — it is all
+ * there from the start, and the ball can roll anywhere it can get to. Nine
+ * parts of town, three across and three down, the superhighway down the
+ * east side and the far side of it:
  *
- *   Portland Heights  the suburbs, north-west: co-op houses, a drained pool
- *                 turned community garden, a consensus maze, a skate park.
- *                 The commune, the anarchists and the theorists. Home is here.
- *   The Alignment District  north, in the middle: the think-tank towers and
- *                 the alley behind them, a group house with a car park on
- *                 its roof, the plaza where the Pause protest has been for
- *                 a year, a building site. Doomers, effective altruists,
- *                 rationalists, safety researchers, and the reply guys.
- *   Brussels-sur-Mer  the filling station at the east end of the avenue,
- *                 now a fuel-tax station: a regulatory sandbox, the strike
- *                 picket, a footbridge over the superhighway to the cookie
- *                 banner on the hill, and a club with a queue behind it.
+ *   Portland Heights  north-west, the suburbs, and home: co-op houses, the
+ *                 drained pool that is now the community garden, a tiny house
+ *                 village, the consensus maze, a skate park, the commune, the
+ *                 food co-op with its roof you can get up on.
+ *   The Alignment District  north, the middle: the Longterm Institute and
+ *                 the alley behind it, the group house's car park up to its
+ *                 roof, the slippery slope, the doom clock, the plaza where
+ *                 the Pause protest has been for a year, the rally stage, a
+ *                 building site whose crane has been paused since March.
+ *   The Ivory Tower  north-east, the campus: the library (closed for
+ *                 training), the lecture hall sunk in the quad, the trolley
+ *                 problem, going round, and the tower itself, a ramp three
+ *                 times round it to the top, where it's above it all.
+ *   The Pause Compound  west: tanks, a catwalk, a lift up the tank of doom,
+ *                 hot takes alley, the bunker. The Prophet of Doom lives here.
+ *   The Timeline  the middle, downtown: towers with screens on them, Ratio
+ *                 Square, the echo chamber, the discourse pit, the infinite
+ *                 scroll (a walkway in the air, to the end of it), and the
+ *                 engagement farm, where the likes are grown.
+ *   Hype Valley   east: the hype cycle, in hills — the peak of inflated
+ *                 expectations, the trough of disillusionment, the slope of
+ *                 enlightenment, the plateau of productivity — and the
+ *                 garage where it all started, the podcast studio, and the
+ *                 infinity pool on top of Sand Hill.
+ *   Brussels-sur-Mer  south-west: the Commission, the stamping hall, the
+ *                 charging station (+21% VAT), the regulatory sandbox, a club
+ *                 with a queue, the Grand-Place, the beach, the pier and the sea.
+ *   The Compute Farm  south-east: the server halls and the hot aisle between
+ *                 them, the cooling towers, the chilled water main, the data
+ *                 lake, the cable yard, the hockey stick.
  *   The Information Superhighway  down the east side, four lanes of trucks
- *                 and tankers in both directions. Nobody brakes. Nobody reads.
- *   The Compute Farm  south-east: rolling dirt, token pumps nodding, a long
- *                 pipeline to roll along, the scaling-law derrick, a tar pit
- *                 of bad takes, the benchmark yard. Accelerationists, VCs
- *                 and podcasters.
- *   The Pause Compound  south-west: tanks, catwalks, a lift, and hot takes
- *                 alley, where the steam comes up out of the floor. The
- *                 Prophet of Doom lives here.
+ *                 and cars. Nobody brakes. Nobody reads. The cookie banner is
+ *                 on the hill on the far side, over the footbridge.
  *
- * Traffic drives round the town on the right. x runs to the right of the
- * map, z down it; the map is 128 tiles each way and a ring of grassy bank
+ * Traffic drives round the city on the right. x runs to the right of the
+ * map, z down it; the map is 256 tiles each way and a ring of grassy bank
  * keeps everything on it.
  */
 
-export const SIZE = 128;
+export const SIZE = 256;
 const CURB = 0.15;
+
+const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
 /** The bank round the edge: up from nothing five tiles in to two and a half high at the very edge, a fence along the top. */
 const berm = (X, Z) => {
@@ -45,88 +59,41 @@ const berm = (X, Z) => {
   return d < 5 ? (5 - d) * 0.5 : 0;
 };
 
-/** The compute farm: rolling ground, fading out to level at its edges, flattened under the pads. */
-const FIELD = { x0: 42, z0: 58, x1: 108, z1: 124 };
-const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
-const pads = [];
-
-function hills(X, Z) {
-  const fade = Math.min(smooth((X - FIELD.x0) / 7), smooth((FIELD.x1 - X) / 7), smooth((Z - FIELD.z0) / 7), smooth((FIELD.z1 - Z) / 7));
-  if (fade <= 0) return 0;
-  let h = 1.0 + 0.75 * Math.sin(X / 6.3) * Math.cos(Z / 7.7) + 0.45 * Math.sin((X + 2 * Z) / 12.5);
-  // Slick Hill: a mound in the west of the field.
-  const r = Math.hypot(X - 60.5, Z - 84.5);
-  if (r < 6) h += 2.6 * smooth(1 - r / 6);
-  return Math.max(0, h) * fade;
-}
-
-function ground(X, Z) {
-  let h = hills(X, Z);
-  // Pads: level where something stands, blending back into the hills over two tiles.
-  let best = 0, padH = 0;
-  for (const p of pads) {
-    const dx = Math.max(p.x - X, 0, X - (p.x + p.w)), dz = Math.max(p.z - Z, 0, Z - (p.z + p.d));
-    const w = 1 - Math.max(dx, dz) / 2;
-    if (w > best) { best = w; padH = p.h; }
-  }
-  if (best > 0) h = h + (padH - h) * smooth(best);
-  return Math.max(h, berm(X, Z));
-}
-
-/** A level pad in the compute farm at the height of the ground under its middle (see `settle`). */
-function pad(x, z, w, d) {
-  const p = { x, z, w, d, h: hills(x + w / 2, z + d / 2) };
-  pads.push(p);
-  return p;
-}
-
 /**
- * Pads close enough that their slopes would meet are put at one height
- * between them, so there is never a step where two of them run together.
+ * The hype cycle, west to east across Hype Valley: the trigger, the peak of
+ * inflated expectations, the trough of disillusionment, the slope of
+ * enlightenment up to the plateau of productivity. Each stretch eases in
+ * and out; the ridge fades out to level at its ends.
  */
-function settle() {
-  const group = pads.map((_, i) => i);
-  const root = (i) => (group[i] === i ? i : (group[i] = root(group[i])));
-  for (let i = 0; i < pads.length; i++) {
-    for (let j = i + 1; j < pads.length; j++) {
-      const a = pads[i], b = pads[j];
-      const gap = Math.max(a.x - (b.x + b.w), b.x - (a.x + a.w), a.z - (b.z + b.d), b.z - (a.z + a.d));
-      if (gap < 4) group[root(i)] = root(j);
-    }
+const HYPE = [[160, 0], [170, 0], [187, 6.5], [199, -1.5], [203, -1.5], [217, 2.5], [221, 2.5], [226, 0]];
+const HYPE_Z = [90, 122];
+function hype(X, Z) {
+  if (X <= HYPE[0][0] || X >= HYPE.at(-1)[0] || Z <= HYPE_Z[0] || Z >= HYPE_Z[1]) return 0;
+  let h = 0;
+  for (let i = 0; i < HYPE.length - 1; i++) {
+    const [x0, h0] = HYPE[i], [x1, h1] = HYPE[i + 1];
+    if (X >= x0 && X <= x1) { h = h0 + (h1 - h0) * smooth((X - x0) / (x1 - x0)); break; }
   }
-  const sums = new Map();
-  pads.forEach((p, i) => {
-    const r = root(i), s = sums.get(r) ?? [0, 0];
-    sums.set(r, [s[0] + p.h * p.w * p.d, s[1] + p.w * p.d]);
-  });
-  pads.forEach((p, i) => {
-    const [h, area] = sums.get(root(i));
-    p.h = Math.round((h / area) * 20) / 20;
-  });
+  return h * Math.min(smooth((Z - HYPE_Z[0]) / 8), smooth((HYPE_Z[1] - Z) / 8));
+}
+
+/** Sand Hill: a round hill, flat on top for the infinity pool. */
+const SAND_HILL = { x: 208, z: 146, top: 6, foot: 15, h: 3 };
+function sandHill(X, Z) {
+  const r = Math.hypot(X - SAND_HILL.x, Z - SAND_HILL.z);
+  return SAND_HILL.h * smooth((SAND_HILL.foot - r) / (SAND_HILL.foot - SAND_HILL.top));
+}
+
+const ground = (X, Z) => berm(X, Z) + hype(X, Z) + sandHill(X, Z);
+
+/** The same numbers every time: a little generator from a seed. */
+function random(seed) {
+  let s = (seed * 2654435761) >>> 0 || 1;
+  return () => ((s = Math.imul(s ^ (s >>> 15), 2246822519) >>> 0) / 4294967296);
 }
 
 export function createTown() {
-  pads.length = 0;
   const c = new TownMap({ name: 'Metrlol', cols: SIZE, rows: SIZE });
-
-  // The compute farm's pads, before the ground is laid, so it is laid round them.
-  const P = {
-    office: pad(50, 65, 7, 6),
-    jack1: pad(54, 70, 6, 4),
-    jack2: pad(66, 78, 6, 4),
-    jack3: pad(58, 94, 6, 4),
-    jack4: pad(82, 72, 6, 4),
-    jack5: pad(90, 90, 6, 4),
-    jack6: pad(76, 108, 6, 4),
-    jack7: pad(54, 108, 6, 4),
-    derrick: pad(75, 83, 12, 10),
-    tar: pad(63, 97, 14, 11),
-    yard: pad(87, 97, 12, 10),
-    pipeEnd: pad(98, 65, 5, 5),
-  };
-  settle();
-  for (const k of Object.keys(P)) P[k] = P[k].h;
-
   c.surface(0, 0, SIZE, SIZE, ground, { surface: 'grass' });
   for (let z = 0; z < SIZE; z++) {
     for (let x = 0; x < SIZE; x++) {
@@ -134,10 +101,8 @@ export function createTown() {
       if (cell.h.some((v) => v > 0.05) && Math.min(x, z, SIZE - 1 - x, SIZE - 1 - z) < 5) cell.surface = 'berm';
     }
   }
-  c.paint(FIELD.x0, FIELD.z0, FIELD.x1 - FIELD.x0, FIELD.z1 - FIELD.z0, 'dirt');
-  for (const p of pads) c.paint(p.x, p.z, p.w, p.d, 'gravel');
 
-  c.start = { x: 17, z: 18 };
+  c.start = { x: 16, z: 19 };
 
   // The fence along the top of the bank, all the way round.
   const F = 0.35, top = berm(0, 0) + 1.3;
@@ -148,25 +113,33 @@ export function createTown() {
   streets(c);
   portlandHeights(c);
   alignmentDistrict(c);
-  brussels(c);
-  superhighway(c);
-  computeFarm(c, P);
+  ivoryTower(c);
   pauseCompound(c);
+  timeline(c);
+  hypeValley(c);
+  brussels(c);
+  computeFarm(c);
+  superhighway(c);
+  streetFurniture(c);
   traffic(c);
-  signs(c);
   crowds(c);
   windowLamps(c);
   structureLights(c);
 
-  c.district('Portland Heights', 3, 3, 44, 57, '#7cb257');
-  c.district('The Alignment District', 47, 3, 49, 57, '#8a8f9a');
-  c.district('Brussels-sur-Mer', 90, 3, 21, 77, '#4a6ac8');
-  c.district('The Information Superhighway', 111, 0, 11, SIZE, '#5a5d66');
-  c.district('The Far Side', 122, 0, 6, SIZE, '#8c9a5a');
-  c.district('The Compute Farm', 42, 58, 69, 70, '#b07c48');
-  c.district('The Pause Compound', 0, 58, 42, 70, '#9aa0aa');
+  c.district('Portland Heights', 0, 0, 78, 86, '#7cb257');
+  c.district('The Alignment District', 78, 0, 80, 86, '#8a8f9a');
+  c.district('The Ivory Tower', 158, 0, 73, 86, '#e2ddd2');
+  c.district('The Pause Compound', 0, 86, 78, 80, '#9aa0aa');
+  c.district('The Timeline', 78, 86, 80, 80, '#5a6ac8');
+  c.district('Hype Valley', 158, 86, 73, 80, '#d8a040');
+  c.district('Brussels-sur-Mer', 0, 166, 122, 90, '#4a6ac8');
+  c.district('The Compute Farm', 122, 166, 109, 90, '#b07c48');
+  c.district('The Information Superhighway', 231, 0, 12, SIZE, '#5a5d66');
+  c.district('The Far Side', 243, 0, 13, SIZE, '#8c9a5a');
   return c;
 }
+
+const RED = { bg: '#d81c2a', fg: '#fff6ee' }, BLUE = { bg: '#1a3aa0', fg: '#f4d020' }, DARK = { bg: '#16161a', fg: '#e8e4d8' };
 
 /** A freestanding sign with words on both faces, solid unless the ball comes at it hard, standing on (x, z). */
 function placard(c, x, z, text, { facing = 0, w = 1.8, h = 1.1, bg, fg, size, y = null } = {}) {
@@ -177,120 +150,9 @@ function placard(c, x, z, text, { facing = 0, w = 1.8, h = 1.1, bg, fg, size, y 
   c.smashable({ kind: 'placard', name: 'placard', ...BREAKABLE.placard, prop }, () => c.solid(x - ex, base, z - ez, x + ex, base + 0.5 + h, z + ez));
 }
 
-/** The signs: the commune's, the Pause protest's, the Eurocrats', the compute farm's. */
-function signs(c) {
-  const RED = { bg: '#d81c2a', fg: '#fff6ee' }, BLUE = { bg: '#1a3aa0', fg: '#f4d020' }, DARK = { bg: '#16161a', fg: '#e8e4d8' };
-  // Portland Heights.
-  placard(c, 11.8, 23.5, 'IN THIS HOUSE\nWE BELIEVE\nIN EVERYTHING', { facing: 3, size: 54 });
-  placard(c, 36, 11.8, 'COMMUNITY\nGARDEN MEETING\nTHU 9PM (AGAIN)', { facing: 2, size: 46 });
-  placard(c, 22, 32.5, 'CONSENSUS MAZE\nSTILL VOTING ON\nTHE EXIT', { facing: 2, size: 48 });
-  placard(c, 36.5, 33.4, 'NO GODS\nNO MASTERS\nNO HELMETS', { facing: 2, ...DARK });
-  // The Alignment District.
-  placard(c, 61, 33.4, 'WHEN IN\nDOUBT,\nPAUSE.', { facing: 2, ...RED, size: 76 });
-  placard(c, 56, 50.4, 'PAPERCLIPS:\nA WARNING', { facing: 0, size: 62 });
-  placard(c, 54.5, 10.7, 'THE LONGTERM\nINSTITUTE', { facing: 0, size: 64, ...DARK });
-  placard(c, 62, 27.4, 'p(doom) = 97%\n(UPDATED\nTUESDAY)', { facing: 0, size: 52 });
-  placard(c, 80, 51, 'PAUSE THE CRANE\n(DEMAND #4)', { facing: 0, size: 52, ...RED });
-  // Brussels-sur-Mer.
-  placard(c, 104, 35.4, 'GRÈVE\nGÉNÉRALE\n(DAY 4)', { facing: 2, ...RED, size: 70 });
-  placard(c, 98.6, 38.5, 'FORM 27B\nREQUIRED', { facing: 3, ...BLUE, size: 66 });
-  placard(c, 108.2, 36.5, 'AI ACT\nARTICLE 1\nOF 113', { facing: 3, ...BLUE, size: 62 });
-  placard(c, 103, 32.4, 'QUEUE STARTS\nHERE\n(SINCE THURSDAY)', { facing: 2, ...DARK, size: 52 });
-  // The Compute Farm.
-  placard(c, 57.5, 74.4, 'TOKEN PUMP\nDO NOT STAND\nUNDER HEAD', { facing: 0, size: 50 });
-  placard(c, 93, 95.5, 'TIME HORIZON\nDOUBLES EVERY\n7 MONTHS*\n*ERROR BARS NOT SHOWN', { facing: 2, size: 38, h: 1.3, w: 2.2 });
-  placard(c, 59.5, 79.4, 'LINE\nGO UP', { facing: 2, ...DARK, size: 90 });
-  placard(c, 100.5, 63.8, 'END OF THE\nTRAINING RUN', { facing: 2, size: 60 });
-  // The Pause Compound.
-  placard(c, 21, 61.2, 'PAUSE COMPOUND\nHONK IF YOU\'RE\nSCARED', { facing: 2, ...RED, size: 50 });
-  placard(c, 10, 64.4, 'THE END IS\nNIGH\n(AGAIN)', { facing: 2, size: 64 });
-  placard(c, 28.5, 81.3, 'HOT TAKES ALLEY\nDO NOT ENTER', { facing: 2, size: 52, ...DARK });
-}
-
-/**
- * The people. Nobody is placed on a roof or in a wall (`map.crowd` sees to
- * that). The Pause protest is in the plaza, where it has been for a year;
- * the Eurocrats are on strike on the forecourt; the accelerationists are out
- * on the compute farm; everywhere else are the reply guys.
- */
-function crowds(c) {
-  // Portland Heights.
-  c.crowd('commune', 11, 11, 14, 16, 3, { seed: 1 }).crowd('commune', 31, 11, 14, 16, 2, { seed: 2 });
-  c.crowd('theorist', 31, 11, 14, 16, 2, { seed: 3 });
-  c.crowd('scroller', 11, 33, 14, 18, 3, { seed: 4 });
-  c.crowd('anarchist', 31, 33, 14, 18, 3, { seed: 5 });
-  // The Alignment District: the plaza, the offices, the building site.
-  c.crowd('pauser', 51, 33, 14, 18, 7, { seed: 6, range: 4 });
-  c.crowd('doomer', 51, 33, 14, 18, 3, { seed: 7 });
-  c.crowd('altruist', 51, 33, 14, 18, 3, { seed: 8 });
-  c.crowd('forecaster', 51, 33, 14, 18, 2, { seed: 9 });
-  c.crowd('purist', 51, 33, 14, 18, 1, { seed: 10 });
-  c.crowd('longtermist', 51, 33, 14, 18, 1, { seed: 11 });
-  c.crowd('researcher', 51, 33, 14, 18, 2, { seed: 12 });
-  c.crowd('rationalist', 58, 12, 1, 14, 2, { seed: 13, range: 6 });
-  c.crowd('replyguy', 50, 10, 1, 18, 2, { seed: 14, range: 8 }).crowd('thoughtleader', 65, 10, 1, 18, 2, { seed: 15, range: 8 });
-  c.crowd('substacker', 71, 43, 14, 8, 2, { seed: 16 }).crowd('vc', 71, 43, 14, 8, 2, { seed: 17 });
-  c.crowd('farmer', 51, 33, 14, 18, 2, { seed: 18 }).crowd('gatekeeper', 71, 43, 14, 8, 1, { seed: 19 });
-  // Brussels-sur-Mer: the strike on the forecourt, the club's yard.
-  c.crowd('eurocrat', 96, 35, 14, 7, 4, { seed: 20 }).crowd('striker', 96, 35, 14, 7, 4, { seed: 21 });
-  c.crowd('commuter', 96, 35, 14, 7, 3, { seed: 22 });
-  c.crowd('raver', 96, 8, 15, 24, 4, { seed: 23 }).crowd('doorman', 96, 8, 15, 24, 2, { seed: 24 });
-  c.foe('troll', 99.5, 35.5, { range: 1.5, notice: 5 });
-  // The Far Side, up on the hill.
-  c.crowd('accelerationist', 122, 24, 3, 22, 3, { seed: 25, maxH: 3 });
-  // The Compute Farm: the pads.
-  c.crowd('podcaster', 50, 65, 7, 6, 2, { seed: 26, maxH: 4 }).crowd('podcaster', 63, 97, 14, 11, 1, { seed: 27, maxH: 4 });
-  c.crowd('accelerationist', 87, 97, 12, 10, 3, { seed: 28, maxH: 4 }).crowd('vc', 87, 97, 12, 10, 2, { seed: 29, maxH: 4 });
-  c.crowd('accelerationist', 75, 83, 12, 10, 2, { seed: 30, maxH: 4 }).crowd('thoughtleader', 75, 83, 12, 10, 1, { seed: 31, maxH: 4 });
-  // The Pause Compound.
-  c.crowd('pauser', 5, 66, 36, 50, 6, { seed: 32, range: 4 });
-  c.crowd('doomer', 5, 66, 36, 50, 4, { seed: 33 }).crowd('forecaster', 5, 66, 36, 50, 2, { seed: 34 });
-  c.crowd('researcher', 5, 66, 36, 50, 2, { seed: 35 }).crowd('purist', 5, 66, 36, 50, 2, { seed: 36 });
-  c.crowd('rationalist', 5, 66, 36, 50, 2, { seed: 37 });
-  c.foe('prophet', 24.5, 112.5, { range: 2.5, notice: 8 });
-}
-
-/** The grid of streets: five running down, three across, the avenue on to the gas station. */
-const DOWN = [6, 26, 46, 66, 86];
-const ACROSS = [6, 28, 52];
-
-function streets(c) {
-  for (const x of DOWN) c.flat(x, 6, 4, 50, 0, { surface: 'road' });
-  for (const z of ACROSS) c.flat(6, z, 84, 4, 0, { surface: 'road' });
-  c.flat(90, 52, 6, 4, 0, { surface: 'road' });
-  // South: into the compound, and the dirt road into the compute farm.
-  c.flat(26, 56, 4, 6, 0, { surface: 'road' });
-  c.flat(46, 56, 4, 7, 0, { surface: 'dirt' });
-
-  const inStreet = (v, list, w = 4) => list.some((s) => v >= s - 0.01 && v <= s + w + 0.01);
-  // Yellow dashes down the middle of each street, but not across the junctions.
-  for (const z of ACROSS) {
-    for (let x = 6.5; x < (z === 52 ? 95 : 89); x += 2) if (!inStreet(x, DOWN) && !inStreet(x + 1, DOWN)) c.mark(x, z + 1.94, 1, 0.12, '#f2c230');
-  }
-  for (const x of DOWN) {
-    for (let z = 6.5; z < 55; z += 2) if (!inStreet(z, ACROSS) && !inStreet(z + 1, ACROSS)) c.mark(x + 1.94, z, 0.12, 1, '#f2c230');
-  }
-  // Zebra crossings on every side of every junction.
-  for (const x of DOWN) {
-    for (const z of ACROSS) {
-      for (let k = 0; k < 4; k++) {
-        if (z > 6) c.mark(x + 0.2 + k, z - 0.9, 0.5, 0.8);
-        if (z < 52) c.mark(x + 0.2 + k, z + 4.1, 0.5, 0.8);
-        if (x > 6) c.mark(x - 0.9, z + 0.2 + k, 0.8, 0.5);
-        if (x < 86) c.mark(x + 4.1, z + 0.2 + k, 0.8, 0.5);
-      }
-    }
-  }
-  // Street lamps on the corners, trees along the avenue.
-  // Street lamps on the corners, their arms out over the junction; more along the long blocks.
-  // At the kerb's edge, so the pavement past them is wide enough for the ball.
-  const kerb = 0.2;
-  for (const x of DOWN) for (const z of ACROSS) c.place('streetlamp', x - kerb, z - kerb, { angle: -Math.PI / 4 });
-  // (Not along the car park, where the pavement runs between its wall and the kerb.)
-  for (const x of DOWN) for (const z of [18.5, 41.5]) if (!(x === 86 && z === 18.5)) c.place('streetlamp', x - kerb, z, { angle: 0 });
-  for (const z of ACROSS) for (const x of [17.5, 37.5, 57.5, 77.5]) c.place('streetlamp', x, z - kerb, { angle: -Math.PI / 2 });
-  for (let x = 8; x < 92; x += 6) if (!inStreet(x, [26, 46])) c.place(x % 4 ? 'tree' : 'pine', x + 0.5, 57.5, { scale: 0.9 + (x % 3) * 0.1, angle: x });
-  for (let z = 12; z < 50; z += 7) c.place('pine', 3.5, z + 0.5, { scale: 1.1, angle: z });
+/** A screen on the face of a building: `text` lit up, `w` by `h`, its middle at (x, y + h / 2, z), facing `facing` quarter turns (0 toward +z). */
+function screen(c, x, z, y, text, { facing = 0, w = 3, h = 1.6, bg, fg, size, glow } = {}) {
+  c.prop('screen', x, z, { y, text, facing, w, h, bg, fg, size, glow });
 }
 
 /** A block: a raised sidewalk all round, and what's inside on top of it. */
@@ -299,8 +161,8 @@ function block(c, x, z, w, d, inside = 'lawn') {
   c.flat(x + 1, z + 1, w - 2, d - 2, CURB, { surface: inside });
 }
 
-function house(c, x, z, w, d, wall, { ridge = 'x', door = 'n' } = {}) {
-  c.block(x, z, w, d, CURB + 1.6, { roof: 'pitched', ridge, wall, pitch: 1.0, facade: 'house', base: CURB, door, lit: 0.55 });
+function house(c, x, z, w, d, wall, { ridge = 'x', door = 'n', h = 1.6 } = {}) {
+  c.block(x, z, w, d, CURB + h, { roof: 'pitched', ridge, wall, pitch: 1.0, facade: 'house', base: CURB, door, lit: 0.55 });
 }
 
 /** A hedge (or any wall): drawn, and solid. */
@@ -309,393 +171,951 @@ function wall(c, x0, z0, x1, z1, y0, y1, colour, finish = 'matte', tex = null) {
   c.solid(x0, y0, z0, x1, y1, z1);
 }
 
-function portlandHeights(c) {
-  const walls = ['#e6dccb', '#c9d8e8', '#f0d9a8', '#d8b8c8', '#cfe3c2', '#f2e6d0'];
-
-  // Home, and the neighbours.
-  block(c, 10, 10, 16, 18);
-  house(c, 12, 12, 5, 5, '#f0d9a8');
-  house(c, 18, 12, 5, 5, walls[1]);
-  house(c, 12, 20, 5, 5, walls[3], { door: 's' });
-  house(c, 18, 20, 5, 5, walls[4], { door: 's' });
-  c.paint(14, 11, 1, 1, 'concrete');
-  c.whetstone('Home', 20.5, 18.5);
-  c.place('mailbox', 15.6, 10.6, { turn: 2 });
-  c.place('tree', 24, 18.5, { scale: 1.1 });
-  c.place('tree', 11.5, 18.5, { scale: 0.95, angle: 1 });
-  c.place('hydrant', 10.25, 26.4);
-  c.gpu('The free stuff table', 23.5, 25.5);
-  c.likeLine(17.5, 13, 17.5, 25, 7);
-
-  // The drained pool, now the community garden.
-  block(c, 30, 10, 16, 18);
-  house(c, 32, 12, 5, 4, walls[2]);
-  house(c, 39, 12, 5, 4, walls[5]);
-  c.surface(33, 18, 9, 8, (X, Z) => {
-    const u = (2 * (X - 33)) / 9 - 1, v = (2 * (Z - 18)) / 8 - 1;
+/** A bowl sunk `depth` into the ground over the rectangle, level at the bottom, its sides easing up to `rim`. */
+function bowl(c, x, z, w, d, rim, depth, surface, flat = 0.3) {
+  c.surface(x, z, w, d, (X, Z) => {
+    const u = (2 * (X - x)) / w - 1, v = (2 * (Z - z)) / d - 1;
     const k = Math.max(Math.abs(u), Math.abs(v));
-    return CURB - 1.3 * (1 - smooth(Math.max(0, (k - 0.35) / 0.65)));
-  }, { surface: 'pool' });
-  c.gpu('The community garden', 37.5, 22);
-  c.likeLine(33.5, 17, 41.5, 17, 5);
-  c.prop('chair', 43.5, 20.5).prop('chair', 43.5, 23.5);
-
-  // The consensus maze (still voting on the way out).
-  block(c, 10, 32, 16, 20);
-  const g = '#3f7a34', top = CURB + 0.9;
-  const ring = (x0, z0, x1, z1, gap) => {
-    const t = 0.4;
-    // gap: which side has the way in, 'n' or 's'; the way in is two tiles in the middle.
-    const mid = (x0 + x1) / 2;
-    const hedge = (a, b, cc, d) => wall(c, a, b, cc, d, CURB, top, g, 'matte', 'hedge');
-    const side = (zz, open) => {
-      if (open) { hedge(x0, zz, mid - 1, zz + t); hedge(mid + 1, zz, x1, zz + t); }
-      else hedge(x0, zz, x1, zz + t);
-    };
-    side(z0, gap === 'n');
-    side(z1 - t, gap === 's');
-    hedge(x0, z0, x0 + t, z1);
-    hedge(x1 - t, z0, x1, z1);
-  };
-  ring(12, 34, 24, 50, 'n');
-  ring(14.2, 36.2, 21.8, 47.8, 's');
-  ring(16.4, 38.4, 19.6, 45.6, 'n');
-  c.gpu('Middle of the consensus maze', 18, 42);
-  c.likeLine(13.2, 36, 13.2, 49, 6);
-  c.likeLine(15.4, 49, 22.6, 49, 4);
-
-  // The skate park, murals on the quarter pipe, a funbox, a bank.
-  block(c, 30, 32, 16, 20, 'concrete');
-  c.surface(41, 34, 4, 16, (X) => CURB + 1.75 * ((X - 41) / 4) ** 2, { surface: 'concrete' });
-  c.flat(34, 39, 3, 5, CURB + 0.8, { surface: 'concrete' });
-  c.slope(31, 39, 3, 5, CURB, CURB + 0.8, 'x', { surface: 'concrete' });
-  c.slope(34, 44, 3, 3, CURB + 0.8, CURB, 'z', { surface: 'concrete' });
-  c.slope(34, 36, 3, 3, CURB, CURB + 0.8, 'z', { surface: 'concrete' });
-  c.gpu('Up the quarter pipe (mural side)', 44.5, 42, { y: CURB + 1.75 * (3.5 / 4) ** 2 });
-  c.likeLine(35.5, 40, 35.5, 43, 3);
-  c.prop('rail', 38, 47, { length: 5 });
-}
-
-function alignmentDistrict(c) {
-  // Offices, and the alley behind them.
-  block(c, 50, 10, 16, 18, 'concrete');
-  c.block(51, 11, 7, 9, CURB + 7.2, { wall: '#a8b4c4', facade: 'office', base: CURB, lit: 0.35 });
-  c.block(51, 21, 7, 6, CURB + 6, { wall: '#c87a5a', facade: 'brick', base: CURB, lit: 0.45, door: 's' });
-  c.block(59, 11, 6, 16, CURB + 9.9, { wall: '#8a98aa', facade: 'office', base: CURB, lit: 0.3 });
-  // A dumpster round the side of the car park, out of everybody's way.
-  c.place('dumpster', 71.55, 25, { turn: 1 });
-  c.gpu('Behind the Substack tower', 58.5, 25.5);
-  c.likeLine(58.5, 14, 58.5, 24, 5);
-
-  // The group house's car park: round and up to the roof.
-  block(c, 70, 10, 16, 18, 'concrete');
-  const L = CURB;
-  c.flat(71, 25, 2, 2, L, { surface: 'concrete' });
-  c.slope(71, 13, 2, 12, 1.1, L, 'z', { surface: 'concrete' });
-  c.flat(71, 11, 2, 2, 1.1, { surface: 'concrete' });
-  c.slope(73, 11, 10, 2, 1.1, 2.1, 'x', { surface: 'concrete' });
-  c.flat(83, 11, 2, 2, 2.1, { surface: 'concrete' });
-  c.slope(83, 13, 2, 12, 2.1, 3.1, 'z', { surface: 'concrete' });
-  c.flat(83, 25, 2, 2, 3.1, { surface: 'concrete' });
-  c.slope(75, 25, 8, 2, 4.1, 3.1, 'x', { surface: 'concrete' });
-  c.flat(73, 25, 2, 2, 4.1, { surface: 'concrete' });
-  c.block(73, 13, 10, 12, 4.1, { surface: 'concrete', wall: '#b0aca2', facade: 'garage', base: CURB, lit: 0 });
-  const par = '#bdb8ab';
-  wall(c, 70.8, 11, 71, 25, 0, 1.6, par, 'matte', 'block');
-  wall(c, 71, 10.8, 85, 11, 0, 2.6, par, 'matte', 'block');
-  wall(c, 85, 11, 85.2, 27, 0, 3.6, par, 'matte', 'block');
-  wall(c, 73, 27, 85, 27.2, 0, 4.6, par, 'matte', 'block');
-  c.gpu('The group house roof', 78, 19, { y: 4.1 });
-  c.likeLine(72, 23, 72, 14, 5).likeLine(75, 12, 81, 12, 4).likeLine(84, 14, 84, 23, 5).likeLine(81, 26, 75, 26, 4);
-  for (const [x, z, col, m] of [[75, 15, '#c8382c', 'sedan'], [79, 21, '#2c6ec8', 'hatchback'], [76.5, 22, '#e8e2d6', 'sedan']]) {
-    c.place(m, x, z, { paint: col, y: 4.1 });
-  }
-
-  // The plaza: a fountain to roll round, a statue of the paperclip, and the Pause protest.
-  block(c, 50, 32, 16, 20, 'brick');
-  c.surface(54, 38, 8, 8, (X, Z) => {
-    const r = Math.hypot(X - 58, Z - 42) / 4;
-    return CURB - 0.7 * (1 - smooth(Math.min(1, r)));
-  }, { surface: 'pool' });
-  c.prop('fountain', 58, 42);
-  c.gpu('In the wishing fountain', 56.4, 42);
-  c.place('statue', 52.5, 48.5, { turn: 2 });
-  for (const [x, z] of [[53, 36], [63, 36], [53, 48.5], [63, 47]]) c.place('tree', x, z, { scale: 1.05, angle: x });
-  c.place('bench', 56, 35.6, { turn: 2 }).place('bench', 60, 49.4).place('bin', 58.2, 35.5, { scale: 0.7 });
-  c.whetstone('Alignment Plaza', 62.5, 42.5);
-  c.likeLine(52, 42, 54, 42, 2).likeLine(62, 38, 62, 46, 4);
-
-  // The building site (the crane has been paused since March): switchbacks up the scaffolding to the top.
-  block(c, 70, 32, 16, 20, 'dirt');
-  c.slope(73, 34, 11, 2, CURB, 2.1, 'x', { surface: 'metal' });
-  c.flat(84, 34, 1, 4, 2.1, { surface: 'metal' });
-  c.slope(73, 36, 11, 2, 4.1, 2.1, 'x', { surface: 'metal' });
-  c.flat(71, 36, 2, 5, 4.1, { surface: 'metal' });
-  c.prop('scaffold', 71, 34, { w: 14, d: 7, h: 4.1 });
-  c.prop('crane', 80, 45);
-  c.solid(79.4, CURB, 44.4, 80.6, 14, 45.6);
-  c.gpu('Scaffold of the Pause rally', 71.6, 39.8, { y: 4.1 });
-  c.likeLine(75, 35, 82, 35, 4).likeLine(82, 37, 75, 37, 4);
-  for (const [x, z] of [[72, 46], [76, 49], [84, 41], [72.6, 46.4], [77, 49.3]]) c.place('cone', x, z);
-  c.drum(74, 46, { range: 6 });
-  c.drum(83, 48, { range: 6 });
-}
-
-function brussels(c) {
-  // The forecourt, a fuel-tax station.
-  c.flat(96, 34, 15, 31, 0, { surface: 'forecourt' });
-  c.flat(99, 44, 1, 6, 0.2, { surface: 'concrete' });
-  c.flat(103, 44, 1, 6, 0.2, { surface: 'concrete' });
-  for (const z of [45.2, 48.2]) {
-    for (const x of [99.5, 103.5]) {
-      c.place('gaspump', x, z + 0.5, { y: 0.2, scale: 0.95 });
-    }
-  }
-  c.prop('canopy', 97, 42, { w: 10, d: 10, h: 2.7 });
-  for (const [x, z] of [[97.25, 42.6], [105.75, 42.6], [97.25, 51.4], [105.75, 51.4]]) c.solid(x - 0.15, 0, z - 0.15, x + 0.15, 2.7, z + 0.15);
-  c.paint(100, 45, 2, 3, 'oil').paint(104, 48, 2, 2, 'oil').paint(97, 52, 2, 1, 'oil');
-  for (let x = 96.5; x < 111; x += 3) c.mark(x, 64.4, 2, 0.12);
-
-  // The Euro shop (closed for lunch), with a loading ramp up its side.
-  c.block(102, 56, 7, 8, 2.4, { wall: '#ece6da', facade: 'shop', base: 0, door: 'n', lit: 1 });
-  c.prop('shop', 102, 56, { w: 7, d: 8, h: 2.4 });
-  c.slope(109, 56, 2, 7, 0, 2.4, 'z', { surface: 'concrete' });
-  c.flat(109, 63, 2, 1, 2.4, { surface: 'concrete' });
-  c.flat(102, 64, 9, 1, 0, { surface: 'forecourt' });
-  wall(c, 110.9, 56, 111.1, 64, 0, 3, '#bdb8ab', 'matte', 'block');
-  c.gpu('On the Euro shop roof', 105.5, 58.5, { y: 2.4 });
-  c.whetstone('Brussels', 98.5, 55.5);
-
-  // The regulatory sandbox: a tunnel, wet all through.
-  c.block(96, 57, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
-  c.block(96, 63, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
-  c.flat(96, 58, 6, 5, 0, { surface: 'wet' });
-  c.deck(95.8, 56.8, 6.4, 7.4, 2.5, { colour: '#e8e4dc', roof: true });
-  c.prop('carwash', 96, 58, { w: 6, d: 5 });
-  c.gpu('In the regulatory sandbox', 99, 60.5);
-
-  // The footbridge over the superhighway, to the cookie banner on the hill.
-  c.slope(101, 34, 10, 2, 0, 2.7, 'x', { surface: 'concrete' });
-  c.deck(111, 34, 11.2, 2, 2.7, { colour: '#a7a39a' });
-  // Its sides: walls beside the ramp, railings along the deck (the traffic goes under).
-  wall(c, 101, 33.8, 111, 34, 0, 3.3, '#5a6068', 'shiny');
-  wall(c, 101, 36, 111, 36.2, 0, 3.3, '#5a6068', 'shiny');
-  wall(c, 111, 33.8, 122, 34, 2.7, 3.3, '#5a6068', 'shiny');
-  wall(c, 111, 36, 115.8, 36.2, 2.7, 3.3, '#5a6068', 'shiny');
-  wall(c, 117.4, 36, 122, 36.2, 2.7, 3.3, '#5a6068', 'shiny');
-  c.flat(122, 24, 3, 22, 2.7, { surface: 'grass', wall: '#6a4a2c' });
-  c.prop('billboard', 123.6, 31, { text: 'ACCEPT ALL\nCOOKIES?', tag: 'REJECT ALL · 47 MORE STEPS' });
-  c.solid(123.2, 2.7, 28.6, 124.0, 6.5, 33.4);
-  c.gpu('Under the cookie banner', 122.8, 26.5, { y: 2.7 });
-  c.likeLine(103, 35, 109, 35, 4);
-  c.likeLine(112, 35, 121, 35, 5, { y: 2.7 });
-
-  // North of the forecourt: the club's yard, with the queue.
-  c.flat(96, 8, 15, 24, 0, { surface: 'gravel' });
-  for (const [x, z, col, r] of [[99, 12, '#8a3a26', 0.3], [104, 11, '#4a6a8a', 1.2], [99, 18, '#6a7a3a', 2.1], [106, 19, '#8a8a8e', 0.6], [101, 26, '#a05a2a', 1.6]]) {
-    c.place('junker', x, z, { angle: r * 1.3, fixed: true });
-    c.cylinder(x, z, 0.9, 0, 0.9);
-    void col;
-  }
-  for (const [x, z] of [[108, 14], [108, 25], [97, 30]]) {
-    c.place('tyres', x, z, { angle: x });
-  }
-  c.likeLine(97, 15, 109, 15, 6).likeLine(103, 22, 103, 30, 4);
-}
-
-function superhighway(c) {
-  c.flat(111, 0, 11, SIZE, 0, { surface: 'highway' });
-  c.flat(116, 4, 1, SIZE - 8, 0.5, { surface: 'concrete' });
-  // Crossovers in the barrier, for the police and the breakdown trucks (and balls).
-  for (const z of [70, 100]) c.flat(116, z, 1, 3, 0, { surface: 'highway' });
-  for (let z = 0; z < SIZE; z += 3) {
-    c.mark(113.94, z, 0.12, 1.6);
-    c.mark(118.94, z, 0.12, 1.6);
-  }
-  c.mark(111.9, 0, 0.1, SIZE, '#f2f0e8').mark(121.0, 0, 0.1, SIZE, '#f2f0e8');
-  // Tunnels where it goes through the bank at each end, and nothing gets past them.
-  c.prop('tunnel', 111, 0, { w: 11, d: 4, facing: 1 });
-  c.prop('tunnel', 111, SIZE - 4, { w: 11, d: 4, facing: -1 });
-  // The tunnels solid, portal and all, so nothing gets in behind them off the banks either side.
-  c.solid(110.2, 0, 0, 122.8, 4.2, 3.9);
-  c.solid(110.2, 0, SIZE - 3.9, 122.8, 4.2, SIZE);
-  c.gpu('On the central reservation', 116.5, 37.7, { y: 0.5 });
-  // The far side: the grass behind the billboard, all the way down to the corner.
-  c.likeLine(123.5, 50, 123.5, 118, 12);
-  c.gpu('The edge of the feed', 124.6, 124.6, { y: berm(124.6, 124.6) });
-}
-
-function computeFarm(c, P) {
-  // The field office.
-  c.prop('trailer', 51, 66, { w: 4, d: 2, y: P.office });
-  c.solid(51, P.office, 66, 55, P.office + 1.5, 68);
-  c.whetstone('Compute Farm Office', 55.5, 69.5);
-
-  // Dirt roads round the field.
-  const road = (x, z, w, d) => c.paint(x, z, w, d, 'dirt');
-  road(47, 63, 58, 2); road(47, 117, 58, 2); road(47, 63, 2, 56); road(103, 63, 2, 56);
-
-  // Token pumps. Each nods over the tile at its head.
-  const jack = (x, z, h, opts) => {
-    c.pumpjack(x, z, opts);
-    c.solid(x - 4.4, h, z + 0.1, x - 2.6, h + 1.1, z + 0.9);
-  };
-  jack(59, 71, P.jack1, { period: 3.4 });
-  jack(71, 79, P.jack2, { period: 3.0, phase: 1 });
-  jack(63, 95, P.jack3, { period: 3.6, phase: 2 });
-  jack(87, 73, P.jack4, { period: 3.2, phase: 0.5 });
-  jack(95, 91, P.jack5, { period: 2.8, phase: 1.5 });
-  jack(81, 109, P.jack6, { period: 3.3, phase: 2.5 });
-  jack(59, 109, P.jack7, { period: 3.1, phase: 0.2 });
-  c.gpu('Under the nodding token pump', 63.5, 95.5, { y: P.jack3 });
-
-  // The pipeline: a long, thin, high way along the top.
-  const PIPE = 3.6;
-  // The ramp up starts flush with the ground under it, corner for corner.
-  c.surface(58, 68, 6, 1, (X, Z) => ground(58, Z) + (PIPE - ground(58, Z)) * ((X - 58) / 6), { surface: 'metal' });
-  c.flat(64, 68, 35, 1, PIPE, { surface: 'metal' });
-  c.flat(99, 66, 3, 3, PIPE, { surface: 'metal' });
-  c.prop('pipeline', 58, 68, { to: 102, h: PIPE });
-  c.gpu('End of the training run', 100.5, 67.5, { y: PIPE });
-  c.likeLine(66, 68.5, 96, 68.5, 10);
-
-  // The scaling-law derrick: up on the lift to the platform at the top.
-  const D = P.derrick, TOP = D + 8;
-  c.prop('derrick', 80, 86, { w: 4, d: 4, y: D, top: TOP });
-  c.deck(80, 86, 4, 4, TOP, { colour: '#8a6a42' });
-  for (const [x, z] of [[80, 86], [83.6, 86], [80, 89.6], [83.6, 89.6]]) c.solid(x, D, z, x + 0.4, TOP - 0.3, z + 0.4);
-  c.lift(78, 87, 2, 2, D, { to: [0, 8, 0], period: 9, pause: 0.22 });
-  wall(c, 79.9, TOP, 84.1, TOP + 0.5, 85.9, 86.1, '#c8382c');
-  c.solids.pop();
-  c.solid(79.9, TOP, 85.9, 84.1, TOP + 0.5, 86.1);
-  c.solid(79.9, TOP, 89.9, 84.1, TOP + 0.5, 90.1);
-  c.solid(83.9, TOP, 85.9, 84.1, TOP + 0.5, 90.1);
-  c.gpu('Top of the scaling law', 82, 88, { y: TOP });
-  c.likeLine(76, 85, 76, 91, 4);
-
-  // The tar pit of bad takes, and the island in the middle of it.
-  const T = P.tar;
-  c.flat(65, 99, 10, 7, T - 0.6, { surface: 'tar' });
-  c.flat(69, 101, 2, 3, T, { surface: 'dirt' });
-  c.flat(65, 102, 4, 1, T, { surface: 'plank' });
-  c.gpu('Bad takes tar pit island', 70, 102.5, { y: T });
-  c.prop('sign', 63.6, 101, { text: 'DANGER\nBAD TAKES', y: T });
-
-  // The benchmark yard: stacks to weave through, and drums that roll after you.
-  const Y = P.yard;
-  for (const [x, z] of [[89, 99], [92, 101], [95, 98.5], [89, 104], [93, 105], [96.5, 102.5]]) {
-    for (const [dx, dz, dy] of [[-0.33, -0.33, 0], [0.33, -0.33, 0], [-0.33, 0.33, 0], [0.33, 0.33, 0], [0, 0, 0.88]]) c.place('drum', x + dx, z + dz, { y: Y + dy, angle: dx * 7 + dz * 3 });
-    c.solid(x - 0.7, Y, z - 0.7, x + 0.7, Y + 1.8, z + 0.7);
-  }
-  c.drum(91, 99); c.drum(96, 105);
-  c.gpu('The benchmark yard', 97.5, 105.5, { y: Y });
-  c.likeLine(88, 102.6, 95, 102.6, 4);
-
-  // The hockey stick: slick all down one side of it.
-  c.paint(58, 80, 6, 3, 'oil').paint(63, 82, 3, 5, 'oil');
-  c.gpu('Top of the hockey stick', 60.5, 84.5);
-
-  // Scrub, rocks and old spills over all the open ground.
-  let seed = 4242;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const open = (x, z) => {
-    const cell = c.cell(Math.floor(x), Math.floor(z));
-    if (!cell || cell.surface !== 'dirt') return false;
-    if (Math.abs(x - 48) < 2 || Math.abs(x - 104) < 2 || Math.abs(z - 64) < 2 || Math.abs(z - 118) < 2) return false;
-    return !c.solids.some((s) => x > s.min[0] - 1 && x < s.max[0] + 1 && z > s.min[2] - 1 && z < s.max[2] + 1);
-  };
-  for (let i = 0; i < 420; i++) {
-    const x = FIELD.x0 + 2 + rnd() * (FIELD.x1 - FIELD.x0 - 4), z = FIELD.z0 + 2 + rnd() * (FIELD.z1 - FIELD.z0 - 4);
-    if (!open(x, z)) continue;
-    const k = rnd();
-    if (k < 0.6) c.place('shrub', x, z, { scale: 0.7 + rnd() * 0.8, angle: rnd() * 6 });
-    else c.place('rock', x, z, { scale: 0.6 + rnd() * 1.1, angle: rnd() * 6 });
-  }
-
-  // Seeds along the roads.
-  c.likeLine(48, 70, 48, 114, 12).likeLine(52, 118, 100, 118, 13).likeLine(104, 112, 104, 68, 12);
-}
-
-function pauseCompound(c) {
-  c.flat(3, 60, 39, 64, 0, { surface: 'concrete' });
-  c.flat(26, 56, 4, 6, 0, { surface: 'road' });
-  c.prop('gate', 26, 60, { w: 4 });
-  c.whetstone('Pause Compound Gate', 32.5, 63.5);
-
-  /** A tank: the tiles inside its circle at its height, and a drum drawn round them. */
-  /** A tank: solid as the cylinder it's drawn as, its roof something to stand on. */
-  const tank = (cx, cz, r, h, colour = '#e8e4dc') => {
-    c.cylinder(cx, cz, r, 0, h);
-    c.prop('tank', cx, cz, { r, h, colour });
-  };
-  tank(12, 70, 4.5, 3);
-  tank(12, 88, 5, 6, '#d8d0c0');
-  tank(26, 104, 4, 4.5, '#c8d0d8');
-  tank(10, 112, 5, 5);
-
-  // Up the ramp, along the catwalk, onto the short tank.
-  c.slope(20, 72, 2, 10, 3, 0, 'z', { surface: 'metal' });
-  c.flat(16, 71, 22, 1, 3, { surface: 'metal' });
-  c.flat(37, 69, 3, 3, 3, { surface: 'metal' });
-  c.prop('catwalk', 16, 71, { w: 24, h: 3 });
-  c.gpu('End of the Pause catwalk', 38.5, 70.5, { y: 3 });
-  c.likeLine(21, 80, 21, 73, 4).likeLine(23, 71.5, 35, 71.5, 6);
-
-  // The tall tank: up on the lift.
-  c.lift(17, 87, 2, 2, 0, { to: [0, 6, 0], period: 8, pause: 0.24 });
-  c.gpu('Top of the big tank of doom', 12.5, 88.5, { y: 6 });
-
-  // Hot takes alley: the steam comes up out of the floor.
-  c.block(32, 82, 1, 26, 1.4, { wall: '#8a9098', wtex: 'block', surface: 'metal' });
-  c.block(37, 82, 1, 26, 1.4, { wall: '#8a9098', wtex: 'block', surface: 'metal' });
-  // In rows, each row going up a little after the one before: a wave of fire down the alley, with a gap behind it to ride.
-  for (let k = 0; k < 6; k++) {
-    c.flare(33 + (k % 2 ? 0 : 2), 85 + k * 3.8, { period: 2.8, phase: -k * 0.35, burn: 0.3 });
-    c.flare(34, 86.6 + k * 3.8, { period: 2.8, phase: -k * 0.35, burn: 0.3 });
-  }
-  c.gpu('End of hot takes alley', 35, 106.5);
-  c.prop('stack', 22, 92, { h: 14 });
-  c.solid(21.2, 0, 91.2, 22.8, 14, 92.8);
-
-  // Yellow walkways painted round the yard, hatching by the hazards, clutter.
-  for (const z of [65.5, 81.5]) c.mark(4, z, 26, 0.12, '#f2c230');
-  c.mark(30.5, 62, 0.12, 60, '#f2c230').mark(24.5, 82, 0.12, 40, '#f2c230');
-  for (let k = 0; k < 8; k++) c.mark(31.2, 82.5 + k * 3.1, 0.6, 0.18, '#f2c230');
-  for (const [x, z, l] of [[25, 66, 4], [6, 81, 3], [29, 99, 5], [15, 100, 3]]) c.prop('valves', x, z, { length: l });
-  for (const [x, z] of [[27, 75], [5, 104], [38, 112]]) {
-    c.prop('cylinders', x, z);
-    c.solid(x - 0.2, 0, z - 0.2, x + 0.55, 1.1, z + 0.55);
-  }
-  c.block(34, 112, 5, 4, 2.2, { wall: '#c8c2b4', wtex: 'corrugated' });
-  c.block(4, 62, 4, 3, 2.0, { wall: '#d8d2c4', wtex: 'corrugated' });
-
-  // Pipes on racks overhead, a sphere tank, drums.
-  c.prop('piperack', 4, 79, { to: 30 });
-  c.prop('piperack', 4, 98, { to: 30 });
-  for (const z of [79, 98]) for (let x = 4.5; x < 30; x += 5) c.solid(x - 0.15, 0, z - 0.15, x + 0.15, 3.4, z + 0.15);
-  c.prop('sphere', 30, 116, { r: 3.5 });
-  // Solid: its legs, and the sphere itself above them (there's room to roll about underneath).
-  for (let i = 0; i < 8; i++) c.cylinder(30 + Math.cos(i * Math.PI / 4) * 3.45, 116 + Math.sin(i * Math.PI / 4) * 3.45, 0.18, 0, 4.7);
-  c.cylinder(30, 116, 3.5, 2.4, 8.2);
-  c.drum(20, 64); c.drum(6, 98);
-  c.likeLine(6, 78, 30, 78, 8).likeLine(28, 64, 28, 110, 10).likeLine(5, 100, 5, 120, 5);
+    return rim - depth * (1 - smooth(Math.max(0, (k - flat) / (1 - flat))));
+  }, { surface });
 }
 
 /**
- * The traffic. Two rings round the whole town, one each way; two more
- * round the middle; a car or two in and out of the gas station; trucks
- * round the compute farm; and the superhighway, which never stops.
+ * Rings of hedge, one inside the next, each with its way in on the side
+ * the one round it hasn't: `gaps`, 'n' or 's' for each, outermost first.
+ */
+function maze(c, x0, z0, x1, z1, gaps, { colour = '#3f7a34', tex = 'hedge', y = CURB, h = 0.9, step = 2.2 } = {}) {
+  const t = 0.4;
+  gaps.forEach((gap, i) => {
+    const a = x0 + i * step, b = z0 + i * step, cc = x1 - i * step, d = z1 - i * step;
+    const mid = (a + cc) / 2;
+    const hedge = (p, q, r, s) => wall(c, p, q, r, s, y, y + h, colour, 'matte', tex);
+    const side = (zz, open) => {
+      if (open) { hedge(a, zz, mid - 1, zz + t); hedge(mid + 1, zz, cc, zz + t); }
+      else hedge(a, zz, cc, zz + t);
+    };
+    side(b, gap === 'n');
+    side(d - t, gap === 's');
+    hedge(a, b, a + t, d);
+    hedge(cc - t, b, cc, d);
+  });
+}
+
+/**
+ * One time round a square tower, `S` across, a ramp two tiles wide climbing
+ * from `h0` at its south-west corner, up the west side, along the north,
+ * down the east and back along the south to `h1`, where it comes out on the
+ * square inside it — the next time round, or the top.
+ */
+function lap(c, x, z, S, h0, h1, opts) {
+  const q = (h1 - h0) / 4;
+  c.flat(x, z + S - 2, 2, 2, h0, opts);
+  c.slope(x, z + 2, 2, S - 4, h0 + q, h0, 'z', opts);
+  c.flat(x, z, 2, 2, h0 + q, opts);
+  c.slope(x + 2, z, S - 4, 2, h0 + q, h0 + 2 * q, 'x', opts);
+  c.flat(x + S - 2, z, 2, 2, h0 + 2 * q, opts);
+  c.slope(x + S - 2, z + 2, 2, S - 4, h0 + 2 * q, h0 + 3 * q, 'z', opts);
+  c.flat(x + S - 2, z + S - 2, 2, 2, h0 + 3 * q, opts);
+  c.slope(x + 2, z + S - 2, S - 4, 2, h1, h0 + 3 * q, 'x', opts);
+}
+
+/** Street lamps at each of `points` where there's room for one, the arm out toward `angle`. */
+function lamps(c, points, angle = 0) {
+  for (const [x, z] of points) if (c.isOpen(x, z, Infinity, { near: true })) c.place('streetlamp', x, z, { angle });
+}
+
+/** `n` of a model scattered over the rectangle, where somebody could stand (so not in a wall or on a road), the same every time. */
+function scatter(c, name, x, z, w, d, n, { seed = 1, scale = [0.9, 1.2], surfaces = null, maxH = 0.4 } = {}) {
+  const rnd = random(seed);
+  for (let placed = 0, tries = 0; placed < n && tries < n * 40; tries++) {
+    const px = x + 0.5 + rnd() * (w - 1), pz = z + 0.5 + rnd() * (d - 1);
+    const cell = c.cell(Math.floor(px), Math.floor(pz));
+    if (!cell || (surfaces && !surfaces.includes(cell.surface)) || ['road', 'highway', 'sidewalk'].includes(cell.surface)) continue;
+    if (!c.isOpen(px, pz, maxH)) continue;
+    c.place(name, px, pz, { scale: scale[0] + rnd() * (scale[1] - scale[0]), angle: rnd() * 6.28 });
+    placed++;
+  }
+}
+
+/**
+ * The streets: `[x, z0, z1]` running down the map four tiles wide, `[z, x0, x1]`
+ * running across it. The avenues go right across the city; each part of town
+ * has streets of its own.
+ */
+const DOWN = [
+  [6, 6, 222], [30, 6, 88], [53, 6, 88], [76, 6, 168], [103, 6, 168], [130, 6, 168], [156, 6, 168], [226, 6, 245],
+  [62, 164, 222], [120, 164, 245], [176, 164, 200],
+];
+const ACROSS = [
+  [6, 6, 230], [32, 6, 160], [58, 6, 160], [84, 6, 230], [164, 6, 230],
+  [110, 76, 160], [136, 76, 160], [124, 156, 230],
+  [192, 6, 124], [218, 6, 124], [196, 120, 230], [241, 120, 230],
+];
+
+/** Where a street running down the map crosses one running across it. */
+function junctions() {
+  const out = [];
+  for (const [x, z0, z1] of DOWN) for (const [z, x0, x1] of ACROSS) if (x >= x0 && x + 4 <= x1 && z >= z0 && z + 4 <= z1) out.push({ x, z, n: z0 < z, s: z1 > z + 4, w: x0 < x, e: x1 > x + 4 });
+  return out;
+}
+
+function streets(c) {
+  for (const [x, z0, z1] of DOWN) c.flat(x, z0, 4, z1 - z0, 0, { surface: 'road' });
+  for (const [z, x0, x1] of ACROSS) c.flat(x0, z, x1 - x0, 4, 0, { surface: 'road' });
+
+  const crossing = (v, list) => list.some(([s, a, b]) => v.at >= a - 0.01 && v.at <= b + 0.01 && v.p >= s - 0.01 && v.p <= s + 4.01);
+  // Yellow dashes down the middle of each street, but not across the junctions.
+  for (const [z, x0, x1] of ACROSS) {
+    for (let x = x0 + 0.5; x < x1 - 1; x += 2) {
+      if (!crossing({ p: x, at: z + 2 }, DOWN) && !crossing({ p: x + 1, at: z + 2 }, DOWN)) c.mark(x, z + 1.94, 1, 0.12, '#f2c230');
+    }
+  }
+  for (const [x, z0, z1] of DOWN) {
+    for (let z = z0 + 0.5; z < z1 - 1; z += 2) {
+      if (!crossing({ p: z, at: x + 2 }, ACROSS) && !crossing({ p: z + 1, at: x + 2 }, ACROSS)) c.mark(x + 1.94, z, 0.12, 1, '#f2c230');
+    }
+  }
+  // Zebra crossings on every side of every junction the street goes on from.
+  for (const j of junctions()) {
+    for (let k = 0; k < 4; k++) {
+      if (j.n) c.mark(j.x + 0.2 + k, j.z - 0.9, 0.5, 0.8);
+      if (j.s) c.mark(j.x + 0.2 + k, j.z + 4.1, 0.5, 0.8);
+      if (j.w) c.mark(j.x - 0.9, j.z + 0.2 + k, 0.8, 0.5);
+      if (j.e) c.mark(j.x + 4.1, j.z + 0.2 + k, 0.8, 0.5);
+    }
+  }
+}
+
+/**
+ * Street lamps on the corners of the junctions, their arms out over them,
+ * and more along the long streets: wherever there is pavement or grass to
+ * stand one on, with nothing there already.
+ */
+function streetFurniture(c) {
+  const free = (x, z) => {
+    const cell = c.cell(Math.floor(x), Math.floor(z));
+    if (!cell || ['road', 'highway', 'water', 'tar', 'sand'].includes(cell.surface) || Math.max(...cell.h) > 0.5 || Math.min(...cell.h) < -0.05) return false;
+    if (c.solids.some((s) => x > s.min[0] - 0.5 && x < s.max[0] + 0.5 && z > s.min[2] - 0.5 && z < s.max[2] + 0.5 && s.min[1] < 3)) return false;
+    return !c.cylinders.some((q) => Math.hypot(q.x - x, q.z - z) < q.r + 0.5);
+  };
+  const lamp = (x, z, angle) => { if (free(x, z)) c.place('streetlamp', x, z, { angle }); };
+  const kerb = 0.2;
+  const all = junctions();
+  for (const j of all) {
+    lamp(j.x - kerb, j.z - kerb, -Math.PI / 4);
+    lamp(j.x + 4 + kerb, j.z + 4 + kerb, (3 * Math.PI) / 4);
+  }
+  const near = (x, z) => all.some((j) => x > j.x - 5 && x < j.x + 9 && z > j.z - 5 && z < j.z + 9);
+  for (const [x, z0, z1] of DOWN) for (let z = z0 + 11.5; z < z1 - 6; z += 22) if (!near(x, z)) lamp(x - kerb, z, 0);
+  for (const [z, x0, x1] of ACROSS) for (let x = x0 + 11.5; x < x1 - 6; x += 22) if (!near(x, z)) lamp(x, z - kerb, -Math.PI / 2);
+}
+
+// ——————————————————————————————————————————————————————————— Portland Heights
+
+function portlandHeights(c) {
+  const walls = ['#e6dccb', '#c9d8e8', '#f0d9a8', '#d8b8c8', '#cfe3c2', '#f2e6d0', '#e8c8a8', '#c8d8c0'];
+
+  // Home, and the neighbours.
+  block(c, 10, 10, 20, 22);
+  house(c, 12, 12, 5, 5, '#f0d9a8');
+  house(c, 23, 12, 5, 5, walls[1]);
+  house(c, 12, 25, 5, 5, walls[3], { door: 's' });
+  house(c, 23, 25, 5, 5, walls[4], { door: 's' });
+  c.paint(14, 11, 1, 1, 'concrete');
+  c.whetstone('Home', 20.5, 20.5);
+  c.place('mailbox', 15.6, 10.6, { turn: 2 });
+  c.place('tree', 26.5, 21, { scale: 1.1 });
+  c.place('tree', 12, 21.5, { scale: 0.95, angle: 1 });
+  c.place('hydrant', 10.25, 31.4);
+  c.gpu('The free stuff table', 20, 29.5);
+  c.likeLine(19.4, 13, 19.4, 18, 3).likeLine(19.4, 23, 19.4, 28, 3);
+  placard(c, 11.8, 23.5, 'IN THIS HOUSE\nWE BELIEVE\nIN EVERYTHING', { facing: 3, size: 54 });
+
+  // The drained pool, now the community garden.
+  block(c, 34, 10, 19, 22);
+  house(c, 36, 12, 5, 4, walls[2]);
+  house(c, 46, 12, 5, 4, walls[5]);
+  bowl(c, 38, 18, 11, 10, CURB, 1.3, 'pool', 0.35);
+  c.gpu('The community garden', 43.5, 23);
+  c.likeLine(38.5, 17, 48.5, 17, 6);
+  c.prop('chair', 50.5, 21).prop('chair', 50.5, 24.5);
+  placard(c, 43.5, 30.2, 'COMMUNITY\nGARDEN MEETING\nTHU 9PM (AGAIN)', { facing: 0, size: 46 });
+
+  // The tiny house village: no cars, no lawns, no privacy.
+  block(c, 57, 10, 19, 22, 'lawn');
+  let k = 0;
+  for (const x of [59, 64, 70]) {
+    for (const z of [12, 18, 25]) {
+      if (x === 64 && z === 18) continue;
+      house(c, x, z, 3, 3, walls[k++ % walls.length], { door: z === 25 ? 's' : 'n' });
+    }
+  }
+  c.gpu('The tiny house village', 65.5, 19.5);
+  c.likeLine(63, 16.5, 68, 16.5, 4).likeLine(63, 23, 68, 23, 4);
+  placard(c, 66, 30.3, 'TINY HOUSES\nBIG FEELINGS', { facing: 0, size: 56 });
+
+  // The consensus maze (still voting on the way out).
+  block(c, 10, 36, 20, 22);
+  maze(c, 12, 38, 28, 56, ['n', 's', 'n']);
+  c.gpu('Middle of the consensus maze', 20, 47);
+  c.likeLine(13.2, 40, 13.2, 54, 6);
+  c.likeLine(15.4, 52.5, 24.6, 52.5, 5);
+  placard(c, 15, 37.3, 'CONSENSUS MAZE\nSTILL VOTING ON\nTHE EXIT', { facing: 2, size: 48 });
+
+  // The skate park: murals on the quarter pipe, a funbox, a rail.
+  block(c, 34, 36, 19, 22, 'concrete');
+  c.surface(48, 38, 4, 18, (X) => CURB + 1.75 * ((X - 48) / 4) ** 2, { surface: 'concrete' });
+  c.flat(38, 43, 3, 5, CURB + 0.8, { surface: 'concrete' });
+  c.slope(35, 43, 3, 5, CURB, CURB + 0.8, 'x', { surface: 'concrete' });
+  c.slope(38, 48, 3, 3, CURB + 0.8, CURB, 'z', { surface: 'concrete' });
+  c.slope(38, 40, 3, 3, CURB, CURB + 0.8, 'z', { surface: 'concrete' });
+  c.gpu('Up the quarter pipe (mural side)', 51.5, 47, { y: CURB + 1.75 * (3.5 / 4) ** 2 });
+  c.likeLine(39.5, 44, 39.5, 47, 3);
+  c.prop('rail', 41, 53, { length: 5 });
+  placard(c, 44, 37.3, 'NO GODS\nNO MASTERS\nNO HELMETS', { facing: 2, ...DARK });
+
+  // The commune: the long house, the allotments, the compost heap.
+  block(c, 57, 36, 19, 22, 'lawn');
+  c.block(59, 38, 14, 6, CURB + 2.2, { roof: 'pitched', ridge: 'x', wall: '#d8b8c8', pitch: 1.2, facade: 'house', base: CURB, door: 's', lit: 0.7 });
+  c.paint(59, 47, 10, 9, 'dirt');
+  for (const z of [48.5, 51.5, 54.5]) for (let x = 59.8; x < 68.5; x += 1.5) c.place('shrub', x, z, { scale: 0.6, angle: x * z });
+  c.surface(70, 48, 5, 6, (X, Z) => CURB + 0.9 * smooth(1 - Math.hypot(X - 72.5, Z - 51) / 3), { surface: 'dirt' });
+  c.likeLine(60, 46, 68, 46, 5);
+  placard(c, 66, 45.2, 'THE COMMUNE\nMEETING ABOUT\nTHE MEETING', { facing: 0, size: 50 });
+
+  // The food co-op, with a loading ramp up its side to the roof.
+  block(c, 10, 62, 20, 22, 'concrete');
+  c.block(13, 65, 10, 8, CURB + 2.4, { wall: '#e8e2d0', facade: 'shop', base: CURB, door: 'n', lit: 1 });
+  c.prop('shop', 13, 65, { w: 10, d: 8, h: CURB + 2.4, text: 'FOOD CO-OP · MEMBERS ONLY · SHIFTS ON THE DOOR', bg: '#3a7a3a', fg: '#f4f1ea' });
+  c.slope(23, 65, 2, 7, CURB, CURB + 2.4, 'z', { surface: 'concrete' });
+  c.flat(23, 72, 2, 1, CURB + 2.4, { surface: 'concrete' });
+  wall(c, 24.9, 65, 25.1, 73, CURB, CURB + 3, '#bdb8ab', 'matte', 'block');
+  c.gpu('On the food co-op roof', 16.5, 67.5, { y: CURB + 2.4 });
+  for (const [x, z, col, m] of [[14, 78, '#3a8a4a', 'hatchback'], [18, 78, '#e8e2d6', 'pickup'], [26, 80, '#c8382c', 'sedan']]) c.place(m, x, z, { paint: col, angle: Math.PI / 2 });
+  for (let x = 12.5; x < 28; x += 4) c.mark(x, 76, 0.12, 4);
+  c.likeLine(12, 74.5, 22, 74.5, 5);
+
+  // Portland Park: the pond, the trees, the benches.
+  block(c, 34, 62, 19, 22, 'lawn');
+  bowl(c, 37, 65, 9, 7, CURB, 0.6, 'pool', 0.4);
+  scatter(c, 'tree', 35, 63, 17, 20, 9, { seed: 11 });
+  c.place('bench', 43.5, 75, { turn: 2 }).place('bench', 48, 79).place('bin', 45.6, 75);
+  c.likeLine(36, 73, 50, 73, 7);
+
+  // Houses.
+  block(c, 57, 62, 19, 22);
+  house(c, 59, 64, 6, 5, walls[6]);
+  house(c, 68, 64, 6, 5, walls[7]);
+  house(c, 59, 76, 6, 5, walls[0], { door: 's' });
+  house(c, 68, 76, 6, 5, walls[2], { door: 's' });
+  c.place('tree', 66, 72, { scale: 1.1 });
+  c.likeLine(58.5, 72, 74.5, 72, 6);
+  placard(c, 60, 72.6, 'HATE HAS\nNO HOME HERE\n(NOR DO WE)', { facing: 0, size: 48 });
+
+  for (let z = 12; z < 82; z += 7) c.place('pine', 3.5, z + 0.5, { scale: 1.1, angle: z });
+}
+
+// ——————————————————————————————————————————————————————————— The Alignment District
+
+function alignmentDistrict(c) {
+  // The Longterm Institute, and the alley behind it.
+  block(c, 80, 10, 23, 22, 'concrete');
+  c.block(81, 11, 8, 10, CURB + 7.2, { wall: '#a8b4c4', facade: 'office', base: CURB, lit: 0.35 });
+  c.block(81, 22, 8, 8, CURB + 6, { wall: '#c87a5a', facade: 'brick', base: CURB, lit: 0.45, door: 's' });
+  c.block(91, 11, 7, 19, CURB + 9.9, { wall: '#8a98aa', facade: 'office', base: CURB, lit: 0.3 });
+  screen(c, 98.05, 20.5, CURB + 5.5, 'p(doom)\n97%\n(UPDATED TUESDAY)', { facing: 1, w: 3.2, h: 2, size: 72, ...DARK });
+  c.gpu('Behind the Substack tower', 90, 21);
+  c.likeLine(90, 13, 90, 28, 6);
+  placard(c, 100.4, 26, 'THE LONGTERM\nINSTITUTE', { facing: 1, size: 64, ...DARK });
+
+  // The group house's car park: round and up to the roof.
+  block(c, 107, 10, 23, 22, 'concrete');
+  const L = CURB;
+  c.flat(110, 27, 2, 2, L, { surface: 'concrete' });
+  c.slope(110, 15, 2, 12, 1.1, L, 'z', { surface: 'concrete' });
+  c.flat(110, 13, 2, 2, 1.1, { surface: 'concrete' });
+  c.slope(112, 13, 10, 2, 1.1, 2.1, 'x', { surface: 'concrete' });
+  c.flat(122, 13, 2, 2, 2.1, { surface: 'concrete' });
+  c.slope(122, 15, 2, 12, 2.1, 3.1, 'z', { surface: 'concrete' });
+  c.flat(122, 27, 2, 2, 3.1, { surface: 'concrete' });
+  c.slope(114, 27, 8, 2, 4.1, 3.1, 'x', { surface: 'concrete' });
+  c.flat(112, 27, 2, 2, 4.1, { surface: 'concrete' });
+  c.block(112, 15, 10, 12, 4.1, { surface: 'concrete', wall: '#b0aca2', facade: 'garage', base: CURB, lit: 0 });
+  const par = '#bdb8ab';
+  wall(c, 109.8, 13, 110, 27, 0, 1.6, par, 'matte', 'block');
+  wall(c, 110, 12.8, 124, 13, 0, 2.6, par, 'matte', 'block');
+  wall(c, 124, 13, 124.2, 29, 0, 3.6, par, 'matte', 'block');
+  wall(c, 112, 29, 124, 29.2, 0, 4.6, par, 'matte', 'block');
+  c.gpu('The group house roof', 117, 21, { y: 4.1 });
+  c.likeLine(111, 25, 111, 16, 5).likeLine(114, 14, 120, 14, 4).likeLine(123, 16, 123, 25, 5).likeLine(120, 28, 114, 28, 4);
+  for (const [x, z, col, m] of [[114, 17, '#c8382c', 'sedan'], [118, 23, '#2c6ec8', 'hatchback'], [115.5, 24, '#e8e2d6', 'sedan']]) c.place(m, x, z, { paint: col, y: 4.1 });
+  placard(c, 126.5, 22, 'GROUP HOUSE\nPARKING\n(ELEVEN CARS,\nONE BATHROOM)', { facing: 1, size: 42, h: 1.3 });
+
+  // The slippery slope: oil all the way up. Take a run at it.
+  block(c, 134, 10, 22, 22, 'concrete');
+  c.slope(138, 19, 12, 3, CURB, CURB + 2.4, 'x', { surface: 'oil' });
+  c.flat(150, 17, 4, 7, CURB + 2.4, { surface: 'concrete', wall: '#9a958a' });
+  c.gpu('Top of the slippery slope', 152.5, 20.5, { y: CURB + 2.4 });
+  c.likeLine(140, 20.5, 148, 20.5, 4);
+  placard(c, 143, 17.4, 'THE SLIPPERY\nSLOPE', { facing: 2, size: 72, ...DARK });
+  placard(c, 143, 23.6, 'FIRST THEY\nCAME FOR THE\nCHATBOTS', { facing: 0, size: 48 });
+
+  // The doom clock, and the prediction market round it.
+  block(c, 80, 36, 23, 22, 'brick');
+  c.block(89, 44, 4, 4, CURB + 9, { wall: '#8a5a48', facade: 'brick', base: CURB, lit: 0.2 });
+  screen(c, 91, 43.95, CURB + 5.4, 'IT IS\n89 SECONDS\nTO MIDNIGHT', { facing: 2, w: 3.6, h: 2.4, bg: '#101014', fg: '#ff4030', size: 80, glow: '#ff6040' });
+  placard(c, 84, 40, 'p(RAIN) = 62%\nBUY', { facing: 0, size: 60 });
+  placard(c, 98, 40, 'WILL THE PAUSE\nHOLD?\nYES 4¢ · NO 96¢', { facing: 0, size: 46 });
+  placard(c, 84, 53, 'p(DOOM)\nSELL', { facing: 2, ...RED, size: 70 });
+  c.place('bench', 91, 52, { turn: 2 }).place('tree', 98.5, 53).place('tree', 83, 46.5);
+  c.likeLine(86, 50, 96, 50, 6);
+
+  // The plaza: a fountain to roll round, a statue of the paperclip, and the Pause protest.
+  block(c, 107, 36, 23, 22, 'brick');
+  bowl(c, 114, 42, 8, 8, CURB, 0.7, 'pool', 0);
+  c.prop('fountain', 118, 46);
+  c.gpu('In the wishing fountain', 116.4, 46);
+  c.place('statue', 110.5, 54.5, { turn: 2 });
+  for (const [x, z] of [[111, 40], [125, 40], [125, 53]]) c.place('tree', x, z, { scale: 1.05, angle: x });
+  c.place('bench', 116, 39.6, { turn: 2 }).place('bench', 120, 55).place('bin', 118.2, 39.5, { scale: 0.7 });
+  c.whetstone('Alignment Plaza', 126.5, 46.5);
+  c.likeLine(109, 46, 112, 46, 2).likeLine(123, 42, 123, 50, 4);
+  placard(c, 117, 37.3, 'WHEN IN\nDOUBT,\nPAUSE.', { facing: 2, ...RED, size: 76 });
+  placard(c, 113.5, 55.2, 'PAPERCLIPS:\nA WARNING', { facing: 0, size: 62 });
+
+  // The rally stage: SHUT IT DOWN, and the speakers to say so.
+  block(c, 134, 36, 22, 22, 'concrete');
+  c.block(140, 39, 11, 5, CURB + 1.0, { surface: 'plank', wall: '#2a2a30', wtex: 'plywood' });
+  c.slope(137, 40, 3, 3, CURB, CURB + 1.0, 'x', { surface: 'plank' });
+  for (const x of [140.2, 149.6]) wall(c, x, 39.2, x + 1.2, 40.2, CURB + 1.0, CURB + 2.8, '#1c1c20');
+  placard(c, 145.5, 39.6, 'SHUT IT\nDOWN', { facing: 0, size: 90, ...RED, y: CURB + 1.0, w: 2.6, h: 1.4 });
+  c.likeLine(142, 41.5, 149, 41.5, 4);
+  for (let x = 137; x < 154; x += 2.5) c.mark(x, 46, 1.5, 0.12, '#f2c230');
+
+  // The building site (the crane has been paused since March): switchbacks up the scaffolding to the top.
+  block(c, 80, 62, 23, 22, 'dirt');
+  c.slope(83, 64, 11, 2, CURB, 2.1, 'x', { surface: 'metal' });
+  c.flat(94, 64, 1, 4, 2.1, { surface: 'metal' });
+  c.slope(83, 66, 11, 2, 4.1, 2.1, 'x', { surface: 'metal' });
+  c.flat(81, 66, 2, 5, 4.1, { surface: 'metal' });
+  c.prop('scaffold', 81, 64, { w: 14, d: 7, h: 4.1 });
+  c.prop('crane', 90, 75);
+  c.solid(89.4, CURB, 74.4, 90.6, 14, 75.6);
+  c.gpu('Up the paused scaffold', 81.6, 69.8, { y: 4.1 });
+  c.likeLine(85, 65, 92, 65, 4).likeLine(92, 67, 85, 67, 4);
+  for (const [x, z] of [[82, 76], [86, 79], [96, 71], [82.6, 76.4], [87, 79.3]]) c.place('cone', x, z);
+  c.reel(84, 77, { range: 6 });
+  c.reel(97, 79, { range: 6 });
+  placard(c, 96, 81.5, 'PAUSE THE CRANE\n(DEMAND #4)', { facing: 0, size: 52, ...RED });
+
+  // The Effective Altruism Center.
+  block(c, 107, 62, 23, 22, 'concrete');
+  c.block(109, 64, 10, 10, CURB + 8, { wall: '#c8d0d8', facade: 'office', base: CURB, lit: 0.4 });
+  c.block(121, 64, 7, 16, CURB + 5, { wall: '#b08068', facade: 'brick', base: CURB, lit: 0.5, door: 'w' });
+  screen(c, 114, 74.05, CURB + 4.6, 'EXPECTED\nVALUE', { facing: 0, w: 4.4, h: 1.8, size: 92, bg: '#0e3a2a', fg: '#9affb8', glow: '#9affd0' });
+  placard(c, 112, 78, 'EARN TO\nGIVE\n(TO US)', { facing: 0, size: 60 });
+  placard(c, 117, 78, 'MOSQUITO NETS\n(ALL OUT)', { facing: 0, size: 54 });
+  c.likeLine(109, 76.5, 119, 76.5, 6);
+  scatter(c, 'tree', 108, 75, 12, 7, 3, { seed: 17 });
+
+  // The group houses.
+  block(c, 134, 62, 22, 22);
+  house(c, 136, 64, 7, 6, '#d8c8e0');
+  house(c, 146, 64, 7, 6, '#c8e0d8');
+  house(c, 136, 75, 7, 6, '#e8d8b8', { door: 's' });
+  house(c, 146, 75, 7, 6, '#d8d8e8', { door: 's' });
+  c.likeLine(135.5, 72.5, 154.5, 72.5, 8);
+  placard(c, 144.5, 73.2, 'STRONG OPINIONS\nWEAKLY HELD\n(TIGHTLY)', { facing: 0, size: 46 });
+}
+
+// ——————————————————————————————————————————————————————————— The Ivory Tower
+
+function ivoryTower(c) {
+  block(c, 160, 10, 66, 74, 'lawn');
+  c.paint(161, 46, 64, 2, 'sidewalk').paint(192, 11, 2, 72, 'sidewalk');
+
+  // The library, closed for training.
+  c.block(164, 14, 22, 14, CURB + 6, { wall: '#b8a890', facade: 'brick', base: CURB, door: 's', lit: 0.55 });
+  screen(c, 175, 28.05, CURB + 3.8, 'THE LIBRARY\nCLOSED FOR TRAINING', { facing: 0, w: 5, h: 1.2, size: 64, bg: '#2a2418', fg: '#f4e0b0', glow: '#ffe0a0' });
+  placard(c, 168, 31, 'ALL RIGHTS\nRESERVED\n(SCRAPED)', { facing: 0, size: 52 });
+
+  // The Ivory Tower: three times round, up to the top, where it's above it all.
+  const marble = { surface: 'marble', wall: '#ece6d8' };
+  lap(c, 200, 14, 22, CURB, CURB + 3, marble);
+  lap(c, 202, 16, 18, CURB + 3, CURB + 6, marble);
+  lap(c, 204, 18, 14, CURB + 6, CURB + 9, marble);
+  c.flat(206, 20, 10, 10, CURB + 9, marble);
+  c.gpu('Top of the Ivory Tower', 211, 25, { y: CURB + 9 });
+  placard(c, 211, 22.5, 'YOU ARE NOW\nABOVE IT ALL', { facing: 0, size: 54, y: CURB + 9 });
+  c.likeLine(201, 31, 201, 18, 6).likeLine(203, 15, 217, 15, 6).likeLine(221, 18, 221, 32, 6);
+  placard(c, 197.5, 38.5, 'THE IVORY TOWER\nMIND THE GAP\n(BETWEEN THEORY\nAND PRACTICE)', { facing: 0, size: 40, h: 1.3 });
+
+  // The lecture hall, sunk in the quad.
+  bowl(c, 166, 52, 18, 18, CURB, 1.8, 'concrete', 0.25);
+  c.gpu('Bottom of the lecture hall', 175, 61);
+  placard(c, 175, 57.5, 'TODAY:\nWHY YOU\nARE WRONG', { facing: 0, size: 58 });
+  c.likeLine(169, 61, 181, 61, 6);
+
+  // The trolley problem, going round and round.
+  c.paint(196, 50, 20, 2, 'road').paint(196, 64, 20, 2, 'road').paint(196, 52, 2, 12, 'road').paint(214, 52, 2, 12, 'road');
+  const rail = '#8a8f9a';
+  for (const z of [50.6, 51.3, 64.6, 65.3]) c.mark(196.6, z, 18.8, 0.08, rail);
+  for (const x of [196.6, 197.3, 214.6, 215.3]) c.mark(x, 50.6, 0.08, 14.8, rail);
+  c.gpu('On the trolley tracks', 205.5, 65);
+  placard(c, 206, 57.5, 'TROLLEY PROBLEM\nPULL THE LEVER?', { facing: 0, size: 54 });
+  placard(c, 206, 60.5, '(THE LEVER IS\nA METAPHOR)', { facing: 2, size: 54 });
+
+  // The quad: the statue, the dorms, the trees.
+  c.place('statue', 193, 40, { turn: 2 });
+  c.whetstone('The Quad', 188.5, 40.5);
+  c.block(170, 74, 12, 7, CURB + 4.8, { wall: '#c8a888', facade: 'brick', base: CURB, door: 'n', lit: 0.6 });
+  c.block(198, 72, 14, 8, CURB + 4.8, { wall: '#b8a090', facade: 'brick', base: CURB, door: 'n', lit: 0.6 });
+  lamps(c, [167, 178, 189, 199, 210, 221].map((x) => [x, 45.6]), -Math.PI / 2);
+  lamps(c, [16, 30, 56, 70, 80].map((z) => [191.6, z]));
+  scatter(c, 'tree', 161, 11, 64, 72, 26, { seed: 23 });
+  c.likeLine(162, 47, 190, 47, 10).likeLine(196, 47, 224, 47, 10).likeLine(193, 12, 193, 37, 8);
+}
+
+// ——————————————————————————————————————————————————————————— The Pause Compound
+
+function pauseCompound(c) {
+  c.flat(10, 88, 66, 76, 0, { surface: 'concrete' });
+  // The fence round it, gates in from the avenue and from the Timeline.
+  const mesh = (x0, z0, x1, z1) => wall(c, x0, z0, x1, z1, 0, 2.2, '#8a9098', 'matte', 'chainlink');
+  mesh(10.2, 88.4, 40, 88.6); mesh(44, 88.4, 75.8, 88.6);
+  mesh(75.6, 88.6, 75.8, 140); mesh(75.6, 144, 75.8, 163.6);
+  mesh(10.2, 163.4, 75.8, 163.6);
+  mesh(10.2, 88.6, 10.4, 163.4);
+  c.prop('gate', 40, 89, { w: 4 });
+  c.whetstone('Pause Compound Gate', 46.5, 93.5);
+  placard(c, 36, 90.6, 'PAUSE COMPOUND\nHONK IF YOU\'RE\nSCARED', { facing: 2, ...RED, size: 50 });
+
+  /** A tank: solid as the cylinder it's drawn as, its roof something to stand on. */
+  const tank = (cx, cz, r, h, colour = '#e8e4dc', label = null) => {
+    c.cylinder(cx, cz, r, 0, h);
+    c.prop('tank', cx, cz, { r, h, colour, label });
+  };
+
+  // Up the ramp, along the catwalk, to the end of it.
+  tank(22, 96, 4.5, 3);
+  c.slope(30, 98, 2, 10, 3, 0, 'z', { surface: 'metal' });
+  c.flat(26, 97, 22, 1, 3, { surface: 'metal' });
+  c.flat(47, 95, 3, 3, 3, { surface: 'metal' });
+  c.prop('catwalk', 26, 97, { w: 24, h: 3 });
+  c.gpu('End of the Pause catwalk', 48.5, 96.5, { y: 3 });
+  c.likeLine(31, 106, 31, 99, 4).likeLine(33, 97.5, 45, 97.5, 6);
+
+  // The tank of doom: up on the lift.
+  tank(24, 124, 5, 6, '#d8d0c0', 'p(DOOM)');
+  c.lift(29, 123, 2, 2, 0, { to: [0, 6, 0], period: 8, pause: 0.24 });
+  c.gpu('Top of the big tank of doom', 24.5, 124.5, { y: 6 });
+  tank(46, 120, 3.5, 4, '#c8d0d8');
+  tank(14, 108, 2.5, 3.5, '#e8e4dc');
+
+  // Hot takes alley: they come up out of the floor, in a wave with a gap behind it.
+  c.block(60, 112, 1, 26, 1.4, { wall: '#8a9098', wtex: 'block', surface: 'metal' });
+  c.block(65, 112, 1, 26, 1.4, { wall: '#8a9098', wtex: 'block', surface: 'metal' });
+  for (let k = 0; k < 6; k++) {
+    c.flare(61 + (k % 2 ? 0 : 2), 115 + k * 3.8, { period: 2.8, phase: -k * 0.35, burn: 0.3 });
+    c.flare(62, 116.6 + k * 3.8, { period: 2.8, phase: -k * 0.35, burn: 0.3 });
+  }
+  c.gpu('End of hot takes alley', 63, 136.5);
+  placard(c, 57.5, 110.6, 'HOT TAKES ALLEY\nDO NOT ENTER', { facing: 2, size: 52, ...DARK });
+  for (let k = 0; k < 8; k++) c.mark(60.2 - 0.6, 112.5 + k * 3.1, 0.6, 0.18, '#f2c230');
+
+  // The bunker: down the ramp into the sunken yard.
+  c.slope(19, 136, 4, 8, 0, -1.2, 'z', { surface: 'concrete' });
+  c.flat(14, 144, 16, 14, -1.2, { surface: 'concrete' });
+  c.block(16, 154, 12, 3, 0.4, { surface: 'grass', wall: '#8a867e', wtex: 'block' });
+  c.gpu('Down in the bunker', 26, 150);
+  placard(c, 24.5, 135.4, 'FALLOUT\nSHELTER\n(FOR IDEAS)', { facing: 2, size: 56, ...BLUE });
+  c.likeLine(21, 138, 21, 146, 4).likeLine(16, 149, 24, 149, 5);
+
+  // Barracks, sandbags, the water tanks, the yard.
+  c.block(40, 102, 16, 5, 2.2, { wall: '#c8c2b4', wtex: 'corrugated' });
+  c.block(40, 110, 16, 5, 2.2, { wall: '#c8c2b4', wtex: 'corrugated' });
+  for (const [x0, z0, x1, z1] of [[34, 128, 42, 128.8], [52, 128, 56, 128.8], [34, 133, 34.8, 140], [36, 156, 46, 156.8]]) wall(c, x0, z0, x1, z1, 0, 0.9, '#b8a070', 'matte', 'canvas');
+  for (const z of [100.5, 117.5]) c.mark(12, z, 26, 0.12, '#f2c230');
+  c.mark(57.5, 92, 0.12, 60, '#f2c230');
+  c.likeLine(14, 118, 14, 134, 6).likeLine(36, 125.5, 56, 125.5, 8).likeLine(68, 96, 68, 156, 16);
+
+  // Floodlights over the yard.
+  lamps(c, [20, 38, 56, 70].flatMap((x) => [100.5, 116.5, 132.5, 148.5].map((z) => [x, z])));
+
+  // The Prophet's yard.
+  placard(c, 46, 143.2, 'THE END IS\nNIGH\n(AGAIN)', { facing: 2, size: 64 });
+  placard(c, 54, 158.5, 'REPENT\n(YOUR PRIORS)', { facing: 0, size: 60, ...RED });
+  placard(c, 40, 158.5, 'I TOLD YOU SO\n(IN 2003)', { facing: 0, size: 54 });
+}
+
+// ——————————————————————————————————————————————————————————— The Timeline
+
+/** A downtown block: four towers on a pavement, plazas between them, screens on some of their faces. */
+function towers(c, x, z, w, d, seed, { skip = [] } = {}) {
+  const rnd = random(seed);
+  block(c, x, z, w, d, 'concrete');
+  const tw = Math.floor((w - 6) / 2), td = Math.floor((d - 6) / 2);
+  const spots = [[x + 2, z + 2], [x + w - 2 - tw, z + 2], [x + 2, z + d - 2 - td], [x + w - 2 - tw, z + d - 2 - td]];
+  const looks = [['#8a98aa', 'office'], ['#a8b4c4', 'office'], ['#c87a5a', 'brick'], ['#6a7890', 'office'], ['#b0a090', 'brick']];
+  spots.forEach(([tx, tz], i) => {
+    if (skip.includes(i)) return;
+    const [colour, facade] = looks[Math.floor(rnd() * looks.length)];
+    const h = CURB + 5 + Math.round(rnd() * 6);
+    c.block(tx, tz, tw, td, h, { wall: colour, facade, base: CURB, lit: 0.3 + rnd() * 0.3, door: i < 2 ? 'n' : 's' });
+    // A screen on the face toward the street, now and then.
+    if (rnd() < 0.7) {
+      const text = SCREENS[Math.floor(rnd() * SCREENS.length)];
+      const [bg, fg] = SCREEN_COLOURS[Math.floor(rnd() * SCREEN_COLOURS.length)];
+      const south = i >= 2;
+      screen(c, tx + tw / 2, south ? tz + td + 0.05 : tz - 0.05, CURB + 2.6, text, { facing: south ? 0 : 2, w: Math.min(tw - 1, 5), h: 1.8, size: 76, bg, fg });
+    }
+  });
+}
+
+const SCREENS = ['TRENDING:\nYOU', 'RATIO', 'HOT TAKE\nINCOMING', 'ENGAGEMENT\n+3%', 'THIS IS\nFINE', 'AGREE?', 'UNFOLLOW', 'BREAKING:\nOPINIONS', 'READ THE\nTHREAD', '1/47', 'COMMUNITY\nNOTE ADDED', 'SPONSORED'];
+const SCREEN_COLOURS = [['#1a1a2a', '#f4f1ea'], ['#0a1a3a', '#5ac8ff'], ['#2a0a1a', '#ff5a8a'], ['#1a2a0a', '#c8ff5a'], ['#2a1a0a', '#ffc85a']];
+
+function timeline(c) {
+  towers(c, 80, 88, 23, 22, 41);
+  towers(c, 107, 88, 23, 22, 43);
+  towers(c, 134, 88, 22, 22, 47);
+
+  // The echo chamber: a round room inside a round room, the ways in on opposite sides.
+  block(c, 80, 114, 23, 22, 'marble');
+  const E = { x: 91.5, z: 125 };
+  for (const [R, open] of [[6.4, -Math.PI / 2], [3.6, Math.PI / 2]]) {
+    const n = Math.round((Math.PI * 2 * R) / 0.78);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const off = Math.atan2(Math.sin(a - open), Math.cos(a - open));
+      if (Math.abs(off) * R < 0.9) continue;
+      const px = E.x + Math.cos(a) * R, pz = E.z + Math.sin(a) * R;
+      c.cylinder(px, pz, 0.3, CURB, CURB + 2.2);
+      c.prop('column', px, pz, { r: 0.3, h: 2.2, colour: '#e8e4dc' });
+    }
+  }
+  c.gpu('In the echo chamber', E.x, E.z);
+  placard(c, 91.5, 116, 'THE ECHO CHAMBER\n(YOU\'RE RIGHT)', { facing: 2, size: 48 });
+  c.likeLine(86, 125, 87.5, 125, 2).likeLine(95.5, 125, 97, 125, 2);
+
+  // Ratio Square: the screens all round it, the billboard, the crowd.
+  block(c, 107, 114, 23, 22, 'brick');
+  c.gpu('Ratio Square', 118.5, 125);
+  c.whetstone('Ratio Square', 111.5, 131.5);
+  c.prop('billboard', 127.6, 125, { text: 'RATIO', tag: 'YOU HAVE BEEN RATIOED · 4.2K QUOTES' });
+  c.solid(127.2, CURB, 122.6, 128.0, CURB + 6.5, 127.4);
+  for (const [x, z] of [[110, 117], [126, 117], [110, 133]]) c.place('tree', x, z, { scale: 1.1, angle: x });
+  c.place('bench', 115, 117.5, { turn: 2 }).place('bench', 122, 132.5).place('bin', 118.5, 117.4);
+  c.likeLine(112, 125, 116, 125, 3).likeLine(121, 125, 125, 125, 3).likeLine(118.5, 119, 118.5, 123, 3);
+  placard(c, 112, 121, 'HAVE YOU\nCONSIDERED\nLOGGING OFF?', { facing: 1, size: 48 });
+
+  // The discourse pit.
+  block(c, 134, 114, 22, 22, 'concrete');
+  bowl(c, 137, 117, 16, 16, CURB, 2.0, 'concrete', 0.3);
+  c.gpu('Bottom of the discourse pit', 145, 125);
+  placard(c, 145, 115.5, 'THE DISCOURSE PIT\n(THERE IS NO\nBOTTOM)', { facing: 2, size: 44, h: 1.3 });
+  c.likeLine(140, 125, 150, 125, 6);
+
+  // The infinite scroll: up the ramp, along the walkway in the air, over the street, to the end of it.
+  block(c, 80, 140, 23, 24, 'concrete');
+  const S = 3.0;
+  c.slope(83, 150, 12, 2, CURB, S, 'x', { surface: 'metal' });
+  c.deck(95, 150, 33, 2, S, { colour: '#2a2c34' });
+  wall(c, 83, 149.8, 95, 150, CURB, S + 0.6, '#5a6068', 'shiny');
+  wall(c, 83, 152, 95, 152.2, CURB, S + 0.6, '#5a6068', 'shiny');
+  wall(c, 95, 149.8, 128, 150, S, S + 0.6, '#5a6068', 'shiny');
+  wall(c, 95, 152, 128, 152.2, S, S + 0.6, '#5a6068', 'shiny');
+  wall(c, 127.9, 150, 128.1, 152, S, S + 0.6, '#5a6068', 'shiny');
+  c.gpu('End of the infinite scroll', 126.8, 151, { y: S });
+  c.likeLine(85, 151, 93, 151, 4).likeLine(98, 151, 124, 151, 12, { y: S });
+  placard(c, 82, 147, 'THE INFINITE\nSCROLL\n(KEEP GOING)', { facing: 0, size: 52 });
+  c.block(83, 154, 9, 7, CURB + 6, { wall: '#7a8898', facade: 'office', base: CURB, lit: 0.35, door: 's' });
+  c.block(94, 154, 7, 7, CURB + 8, { wall: '#9aa4b0', facade: 'office', base: CURB, lit: 0.35 });
+  c.block(83, 141, 8, 6, CURB + 5, { wall: '#c87a5a', facade: 'brick', base: CURB, lit: 0.45 });
+
+  block(c, 107, 140, 23, 24, 'concrete');
+  c.block(109, 142, 8, 6, CURB + 7, { wall: '#8a98aa', facade: 'office', base: CURB, lit: 0.3, door: 'n' });
+  c.block(119, 142, 9, 6, CURB + 10, { wall: '#6a7890', facade: 'office', base: CURB, lit: 0.3, door: 'n' });
+  c.block(109, 155, 8, 7, CURB + 6, { wall: '#b0a090', facade: 'brick', base: CURB, lit: 0.4, door: 's' });
+  c.block(119, 155, 9, 7, CURB + 9, { wall: '#a8b4c4', facade: 'office', base: CURB, lit: 0.3, door: 's' });
+  screen(c, 123.5, 154.95, CURB + 4.2, 'YOU HAVE\nREACHED THE\nEND', { facing: 2, w: 5, h: 2.2, size: 64, bg: '#2a0a1a', fg: '#ff5a8a' });
+
+  // The engagement farm: likes, grown in rows. Pick your own.
+  block(c, 134, 140, 22, 24, 'dirt');
+  c.block(146, 142, 8, 6, CURB + 2.2, { roof: 'pitched', ridge: 'x', wall: '#a83a2a', wtex: 'timber', pitch: 1.4 });
+  for (let z = 150.5; z < 162; z += 2.5) c.likeLine(136, z, 153, z, 9);
+  for (const [x0, z0, x1, z1] of [[135.2, 149, 135.4, 162.8], [135.4, 162.6, 154.8, 162.8], [154.6, 149, 154.8, 162.8]]) wall(c, x0, z0, x1, z1, CURB, CURB + 0.7, '#8a6a42', 'matte', 'timber');
+  wall(c, 135.4, 149, 142, 149.2, CURB, CURB + 0.7, '#8a6a42', 'matte', 'timber');
+  wall(c, 145, 149, 154.6, 149.2, CURB, CURB + 0.7, '#8a6a42', 'matte', 'timber');
+  c.gpu('The engagement farm', 153.5, 161.5);
+  placard(c, 140, 145, 'ENGAGEMENT FARM\nPICK YOUR OWN', { facing: 2, size: 52 });
+  c.foe('troll', 102.4, 151, { range: 1.5, notice: 5 });
+}
+
+// ——————————————————————————————————————————————————————————— Hype Valley
+
+function hypeValley(c) {
+  // The hype cycle, signposted.
+  placard(c, 165, 103, 'TECHNOLOGY\nTRIGGER', { facing: 1, size: 62 });
+  placard(c, 183, 100.5, 'PEAK OF\nINFLATED\nEXPECTATIONS', { facing: 0, size: 46 });
+  placard(c, 201, 99.5, 'TROUGH OF\nDISILLUSIONMENT', { facing: 0, size: 50 });
+  placard(c, 210, 99.5, 'SLOPE OF\nENLIGHTENMENT', { facing: 0, size: 54 });
+  placard(c, 218.5, 101.5, 'PLATEAU OF\nPRODUCTIVITY', { facing: 0, size: 54 });
+  c.gpu('Peak of Inflated Expectations', 187, 106);
+  c.gpu('Trough of Disillusionment', 201, 106);
+  c.gpu('Plateau of Productivity', 219, 112);
+  c.likeLine(172, 106, 184, 106, 6).likeLine(205, 106, 215, 106, 5);
+  // Lamps all the way along, so the curve can be seen from anywhere.
+  for (let x = 163.5; x < 222; x += 5.5) c.place('streetlamp', x, 103.2, { angle: -Math.PI / 2 });
+
+  // The footbridge off the plateau, over the road and the superhighway, to the far side.
+  c.slope(221, 106, 5, 2, 2.5, 2.7, 'x', { surface: 'concrete' });
+  c.deck(226, 106, 17.2, 2, 2.7, { colour: '#a7a39a' });
+  wall(c, 221, 105.8, 226, 106, 0, 3.3, '#5a6068', 'shiny');
+  wall(c, 221, 108, 226, 108.2, 0, 3.3, '#5a6068', 'shiny');
+  wall(c, 226, 105.8, 243, 106, 2.7, 3.3, '#5a6068', 'shiny');
+  wall(c, 226, 108, 236.8, 108.2, 2.7, 3.3, '#5a6068', 'shiny');
+  wall(c, 238.4, 108, 243, 108.2, 2.7, 3.3, '#5a6068', 'shiny');
+  c.likeLine(228, 107, 242, 107, 6, { y: 2.7 });
+
+  // The garage where it all started.
+  c.flat(166, 132, 8, 7, 0, { surface: 'concrete' });
+  c.block(166, 132, 8, 1, 2.2, { wall: '#d8c8b0', wtex: 'clapboard' });
+  c.block(166, 133, 1, 6, 2.2, { wall: '#d8c8b0', wtex: 'clapboard' });
+  c.block(173, 133, 1, 6, 2.2, { wall: '#d8c8b0', wtex: 'clapboard' });
+  c.deck(165.8, 131.8, 8.4, 7.4, 2.5, { colour: '#6a5a4a', roof: true });
+  c.gpu('The garage where it all started', 170, 134.5);
+  placard(c, 170, 141.5, 'IN THIS GARAGE\nIN 2015\nWE CHANGED\nEVERYTHING', { facing: 0, size: 40, h: 1.3 });
+  c.place('junker', 170, 145, { angle: 0.2, fixed: true });
+  c.cylinder(170, 145, 0.9, 0, 0.9);
+
+  // The podcast studio: three hours an episode.
+  c.block(178, 132, 10, 8, 3.2, { wall: '#2a2a30', facade: 'shop', base: 0, door: 'n', lit: 0.8 });
+  c.prop('shop', 178, 132, { w: 10, d: 8, h: 3.2, text: 'ON AIR · EPISODE 4,812 · HOUR 3', bg: '#c8182a', fg: '#fff6ee' });
+  c.likeLine(178, 130, 188, 130, 5);
+
+  // VC row, at the foot of Sand Hill.
+  house(c, 163, 151, 8, 7, '#f2ece0', { door: 'n', h: 2.4 });
+  house(c, 175, 151, 8, 7, '#e0e8f0', { door: 'n', h: 2.4 });
+  c.block(186, 150, 6, 9, 3.4, { wall: '#d8dce4', facade: 'office', base: 0, lit: 0.5 });
+  placard(c, 181, 147.5, 'WE ARE\nSO BACK', { facing: 0, size: 76, ...DARK });
+
+  // Sand Hill, and the infinity pool on top of it.
+  const P = SAND_HILL;
+  bowl(c, P.x - 3, P.z - 3, 6, 6, P.h, 0.9, 'pool', 0.3);
+  c.gpu('The VC\'s infinity pool', P.x, P.z, { y: P.h - 0.9 });
+  c.prop('chair', P.x - 4.5, P.z - 1.5).prop('chair', P.x - 4.5, P.z + 1.5);
+  c.prop('parasol', P.x + 4.5, P.z, { colour: '#c8182a' });
+  c.cylinder(P.x + 4.5, P.z, 0.06, P.h, P.h + 2.2);
+  placard(c, P.x, P.z - 13.5, 'SAND HILL\nPRIVATE\n(YOU CAN\'T AFFORD IT)', { facing: 2, size: 44 });
+  c.likeLine(P.x - 11, P.z, P.x - 5, P.z, 4).likeLine(P.x, P.z + 11, P.x, P.z + 5, 4);
+
+  c.whetstone('Hype Valley', 165.5, 145.5);
+  scatter(c, 'tree', 160, 128, 66, 36, 18, { seed: 31, surfaces: ['grass'], maxH: 3.5 });
+  scatter(c, 'shrub', 160, 88, 66, 36, 30, { seed: 37, surfaces: ['grass'], maxH: 7 });
+}
+
+// ——————————————————————————————————————————————————————————— Brussels-sur-Mer
+
+function brussels(c) {
+  // The European quarter: the Commission, and the stamping hall.
+  block(c, 10, 168, 52, 24, 'marble');
+  c.block(13, 170, 18, 9, CURB + 8, { wall: '#d8dce4', facade: 'office', base: CURB, door: 's', lit: 0.4 });
+  screen(c, 22, 179.05, CURB + 5.4, 'DIRECTORATE-GENERAL\nFOR CONSENSUS', { facing: 0, w: 7, h: 1.4, size: 56, ...BLUE });
+  // The hall: a lane between two walls, the stamps over it, the far end shut. APPROVED, eventually; then back out.
+  c.block(30, 185, 26, 1, CURB + 1.4, { wall: '#c8c2b4', wtex: 'stone' });
+  c.block(30, 187, 26, 1, CURB + 1.4, { wall: '#c8c2b4', wtex: 'stone' });
+  c.block(55, 186, 1, 1, CURB + 1.4, { wall: '#c8c2b4', wtex: 'stone' });
+  [34, 38, 42, 46, 50].forEach((x, i) => c.stamp(x, 186, { period: 3.0, phase: i * 0.7 }));
+  c.gpu('Through the stamping hall', 53.5, 186.5);
+  placard(c, 28, 183.5, 'THE STAMPING HALL\nAPPROVED · DENIED\n· PENDING', { facing: 2, size: 44, ...BLUE });
+  placard(c, 40, 181, 'AI ACT\nARTICLE 1\nOF 113', { facing: 0, ...BLUE, size: 62 });
+  placard(c, 50, 181, 'FORM 27B\nREQUIRED', { facing: 0, ...BLUE, size: 66 });
+  c.likeLine(36, 186.5, 36, 186.5, 1).likeLine(44, 186.5, 44, 186.5, 1).likeLine(52, 186.5, 52, 186.5, 1);
+  c.likeLine(14, 182, 28, 182, 7);
+  for (const x of [34, 38, 42, 46, 50]) c.mark(x + 0.1, 186.05, 0.8, 0.9, '#c8182a');
+
+  // The charging station (+21% VAT).
+  c.flat(66, 168, 54, 24, 0, { surface: 'forecourt' });
+  c.flat(71, 175, 1, 6, 0.2, { surface: 'concrete' });
+  c.flat(75, 175, 1, 6, 0.2, { surface: 'concrete' });
+  for (const z of [176.2, 179.2]) for (const x of [71.5, 75.5]) c.place('charger', x, z + 0.5, { y: 0.2, scale: 0.95 });
+  c.prop('canopy', 69, 173, { w: 10, d: 10, h: 2.7 });
+  for (const [x, z] of [[69.25, 173.6], [77.75, 173.6], [69.25, 182.4], [77.75, 182.4]]) c.solid(x - 0.15, 0, z - 0.15, x + 0.15, 2.7, z + 0.15);
+  for (let x = 66.5; x < 120; x += 3) c.mark(x, 190.4, 2, 0.12);
+
+  // The Euro shop (closed for lunch), with a loading ramp up its side.
+  c.block(84, 172, 7, 8, 2.4, { wall: '#ece6da', facade: 'shop', base: 0, door: 'n', lit: 1 });
+  c.prop('shop', 84, 172, { w: 7, d: 8, h: 2.4 });
+  c.slope(91, 172, 2, 7, 0, 2.4, 'z', { surface: 'concrete' });
+  c.flat(91, 179, 2, 1, 2.4, { surface: 'concrete' });
+  wall(c, 92.9, 172, 93.1, 180, 0, 3, '#bdb8ab', 'matte', 'block');
+  c.gpu('On the Euro shop roof', 87.5, 174.5, { y: 2.4 });
+
+  // The regulatory sandbox: a shed with sand in it.
+  c.block(100, 172, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
+  c.block(100, 178, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
+  c.flat(100, 173, 6, 5, 0, { surface: 'sand' });
+  c.deck(99.8, 171.8, 6.4, 7.4, 2.5, { colour: '#e8e4dc', roof: true });
+  c.prop('sandbox', 100, 173, { w: 6, d: 5 });
+  c.gpu('In the regulatory sandbox', 103, 175.5);
+  c.whetstone('Brussels', 96.5, 188.5);
+  placard(c, 110, 186.5, 'GRÈVE\nGÉNÉRALE\n(DAY 4)', { facing: 2, ...RED, size: 70 });
+  placard(c, 114, 176, 'NO\nINNOVATION\nWITHOUT\nCONSULTATION', { facing: 3, size: 42, h: 1.3 });
+
+  // Berghain-sur-Mer, and the queue, which has been there since Thursday.
+  c.flat(10, 196, 52, 22, 0, { surface: 'gravel' });
+  c.block(34, 204, 24, 12, 4.4, { wall: '#3a3a40', wtex: 'posters' });
+  c.prop('shop', 34, 204, { w: 24, d: 12, h: 4.4, text: 'BERGHAIN-SUR-MER · NO PHOTOS · NO', bg: '#101014', fg: '#e8e4d8' });
+  wall(c, 30, 199, 52, 199.12, 0, 0.9, '#c8c8cc', 'shiny');
+  wall(c, 34, 201.5, 56, 201.62, 0, 0.9, '#c8c8cc', 'shiny');
+  c.gpu('Front of the queue', 45, 203.1);
+  placard(c, 28, 197.5, 'QUEUE STARTS\nHERE\n(SINCE THURSDAY)', { facing: 2, ...DARK, size: 52 });
+  for (const [x, z, r] of [[14, 200, 0.3], [20, 203, 1.2], [14, 210, 2.1], [22, 212, 0.6]]) {
+    c.place('junker', x, z, { angle: r * 1.3, fixed: true });
+    c.cylinder(x, z, 0.9, 0, 0.9);
+  }
+  for (const [x, z] of [[27, 207], [26, 214], [12, 216]]) c.place('tyres', x, z, { angle: x });
+  c.likeLine(31, 200.3, 51, 200.3, 8).likeLine(35, 202.8, 55, 202.8, 8);
+
+  // The Grand-Place: guild houses all round, frites in the middle.
+  block(c, 66, 196, 54, 22, 'brick');
+  const rnd = random(5);
+  const guild = ['#e8d8b0', '#d8c8a0', '#c8b890', '#e0d0c0', '#d0c0a8', '#e8e0c8'];
+  for (let x = 68; x < 116; x += 6) {
+    for (const z of [198, 211]) c.block(x, z, 5, 5, CURB + 4 + Math.round(rnd() * 2.5), { roof: 'pitched', ridge: 'z', pitch: 1.6, wall: guild[Math.floor(rnd() * guild.length)], wtex: 'haussmann' });
+  }
+  c.block(78, 206, 3, 2, CURB + 1.6, { wall: '#f2c230', wtex: 'plywood' });
+  placard(c, 79.5, 205.2, 'FRITES\n+21% VAT', { facing: 2, size: 64, ...BLUE });
+  c.place('statue', 104.5, 207, { scale: 0.6 });
+  c.gpu('The Grand-Place', 92.5, 207);
+  c.likeLine(70, 205, 76, 205, 3).likeLine(84, 207, 100, 207, 8);
+
+  // The seafront: the promenade, the beach, the pier, the sea.
+  c.flat(6, 222, 114, 2, CURB, { surface: 'sidewalk' });
+  c.flat(6, 224, 114, 8, CURB, { surface: 'sand' });
+  c.slope(6, 232, 114, 4, CURB, -0.3, 'z', { surface: 'sand' });
+  c.flat(6, 236, 114, 15, -0.7, { surface: 'water' });
+  c.flat(90, 224, 2, 20, CURB + 0.15, { surface: 'plank' });
+  c.flat(87, 244, 8, 4, CURB + 0.15, { surface: 'plank' });
+  const rail = (x0, z0, x1, z1) => wall(c, x0, z0, x1, z1, CURB + 0.15, CURB + 0.75, '#e8e4dc', 'shiny');
+  rail(89.9, 230, 90, 244); rail(92, 230, 92.1, 244);
+  rail(86.9, 243.9, 90, 244); rail(92, 243.9, 95.1, 244);
+  rail(86.9, 244, 87, 248.1); rail(95, 244, 95.1, 248.1); rail(86.9, 248, 95.1, 248.1);
+  c.gpu('End of the pier', 91, 246, { y: CURB + 0.15 });
+  c.likeLine(91, 226, 91, 242, 8, { y: CURB + 0.15 });
+  const colours = ['#1a3aa0', '#c8182a', '#f2c230', '#3a8a4a'];
+  for (let x = 14, i = 0; x < 112; x += 9, i++) {
+    if (Math.abs(x - 91) < 4) continue;
+    const z = 228 + (i % 2) * 3;
+    c.prop('parasol', x, z, { colour: colours[i % colours.length] });
+    c.cylinder(x, z, 0.06, c.heightAt(x, z), c.heightAt(x, z) + 2.2);
+    c.prop('chair', x + 1.4, z + 0.4);
+  }
+  placard(c, 40, 224.8, 'LA PLAGE\nBATHING: SEE\nDIRECTIVE 2006/7/EC', { facing: 0, size: 46, ...BLUE });
+  c.likeLine(10, 223, 86, 223, 20);
+}
+
+// ——————————————————————————————————————————————————————————— The Compute Farm
+
+function computeFarm(c) {
+  c.flat(124, 168, 102, 28, 0, { surface: 'gravel' });
+  c.flat(124, 200, 102, 41, 0, { surface: 'gravel' });
+  c.flat(176, 164, 4, 36, 0, { surface: 'road' });
+
+  // The server halls, and the hot aisle between them.
+  c.block(128, 170, 44, 10, 3.4, { wall: '#c8ccd2', wtex: 'corrugated' });
+  c.block(128, 184, 44, 10, 3.4, { wall: '#c8ccd2', wtex: 'corrugated' });
+  c.paint(128, 180, 44, 4, 'grate');
+  for (let k = 0; k < 9; k++) c.flare(132 + Math.round(k * 4.4), 181 + (k % 2), { period: 3.2, phase: k * 0.5, burn: 0.25 });
+  screen(c, 150, 169.95, 1.0, 'TRAINING RUN 7\n81% · 3 WEEKS LEFT', { facing: 2, w: 8, h: 1.6, size: 62, bg: '#0a1a3a', fg: '#5ac8ff' });
+  screen(c, 150, 194.05, 1.0, 'PLEASE DO NOT\nUNPLUG', { facing: 0, w: 6, h: 1.6, size: 70, bg: '#2a0a1a', fg: '#ff5a8a' });
+  placard(c, 126, 182, 'HOT AISLE\nKEEP MOVING', { facing: 1, size: 58, ...DARK });
+  c.likeLine(130, 182.5, 170, 182.5, 12);
+
+  // The cooling towers: the far one has a lift up it.
+  const tower = (cx, cz, label) => {
+    c.cylinder(cx, cz, 5, 0, 7);
+    c.prop('tank', cx, cz, { r: 5, h: 7, colour: '#c8c4bc', tex: 'block', label });
+  };
+  tower(192, 182, 'COOLING');
+  tower(210, 182, null);
+  c.lift(215, 181, 2, 2, 0, { to: [0, 7, 0], period: 9, pause: 0.22 });
+  c.gpu('Top of the cooling tower', 210.5, 182.5, { y: 7 });
+  c.likeLine(220, 172, 220, 192, 6);
+
+  // The chilled water main: a long, thin, high way along the top.
+  const PIPE = 3.6;
+  c.slope(130, 204, 6, 1, 0, PIPE, 'x', { surface: 'metal' });
+  c.flat(136, 204, 40, 1, PIPE, { surface: 'metal' });
+  c.flat(176, 202, 3, 3, PIPE, { surface: 'metal' });
+  c.slope(179, 203, 6, 1, PIPE, 0, 'x', { surface: 'metal' });
+  c.prop('pipeline', 130, 204, { to: 179, h: PIPE });
+  c.gpu('End of the chilled water main', 177.5, 203.5, { y: PIPE });
+  c.likeLine(138, 204.5, 172, 204.5, 10);
+
+  // The site office.
+  c.prop('trailer', 128, 210, { w: 4, d: 2, y: 0 });
+  c.solid(128, 0, 210, 132, 1.5, 212);
+  c.whetstone('Compute Farm Office', 134.5, 214.5);
+
+  // The hockey stick: flat for a long way, then LINE GO UP.
+  c.flat(140, 222, 16, 6, 0, { surface: 'metal' });
+  c.surface(156, 222, 6, 6, (X) => 2.4 * ((X - 156) / 6) ** 2, { surface: 'metal' });
+  c.flat(162, 222, 4, 6, 2.4, { surface: 'metal' });
+  wall(c, 165.8, 222, 166, 228, 2.4, 3.4, '#c8382c', 'shiny');
+  c.gpu('Top of the hockey stick', 164.5, 225, { y: 2.4 });
+  placard(c, 148, 220.6, 'LINE\nGO UP', { facing: 2, ...DARK, size: 90 });
+  c.likeLine(142, 225, 154, 225, 6);
+
+  // The data lake, and the island in the middle of it.
+  c.flat(198, 214, 10, 7, -0.6, { surface: 'tar' });
+  c.flat(202, 216, 2, 3, 0, { surface: 'dirt' });
+  c.flat(198, 217, 4, 1, 0, { surface: 'plank' });
+  c.gpu('The data lake island', 203, 217.5);
+  c.prop('sign', 196.6, 216, { text: 'DANGER\nDATA LAKE', y: 0 });
+  placard(c, 203, 212.4, 'THE DATA LAKE\nUNFILTERED\nDO NOT DRINK', { facing: 2, size: 48 });
+
+  // The cable yard: stacks to weave through, and reels that roll after you.
+  c.flat(186, 226, 14, 12, 0, { surface: 'concrete' });
+  for (const [x, z] of [[189, 229], [193, 231], [197, 228.5], [189, 234], [193, 235.5], [197.5, 233.5]]) {
+    for (const [dx, dz, dy] of [[-0.33, -0.33, 0], [0.33, -0.33, 0], [-0.33, 0.33, 0], [0.33, 0.33, 0], [0, 0, 0.88]]) c.place('reel', x + dx, z + dz, { y: dy, angle: dx * 7 + dz * 3, scale: 0.9 });
+    c.solid(x - 0.7, 0, z - 0.7, x + 0.7, 1.8, z + 0.7);
+  }
+  c.reel(191, 228); c.reel(195, 236);
+  c.gpu('The cable yard', 198.8, 237);
+  c.likeLine(187, 232.3, 198, 232.3, 6);
+
+  // The substation.
+  const mesh = (x0, z0, x1, z1) => wall(c, x0, z0, x1, z1, 0, 2, '#8a9098', 'matte', 'chainlink');
+  mesh(208, 224, 224, 224.2); mesh(208, 238, 224, 238.2); mesh(208, 224.2, 208.2, 229); mesh(208, 233, 208.2, 238); mesh(223.8, 224.2, 224, 238);
+  for (const [x, z] of [[212, 227], [218, 227], [212, 233], [218, 233]]) wall(c, x, z, x + 2.2, z + 2.6, 0, 2.2, '#5a6068', 'shiny');
+  placard(c, 206.5, 231, 'DANGER\n400 kV\n(FOR THE CHATBOT)', { facing: 3, size: 52, ...RED });
+
+  // Yard lamps.
+  lamps(c, [[184, 204], [196, 204], [210, 204], [222, 204], [184, 222], [214, 220], [176, 236], [204, 240], [150, 214], [140, 236], [128, 228]]);
+
+  // Scrub and rocks over the open gravel.
+  const rnd = random(4242);
+  const open = (x, z) => {
+    const cell = c.cell(Math.floor(x), Math.floor(z));
+    if (!cell || cell.surface !== 'gravel' || Math.abs(cell.h[0]) > 0.01) return false;
+    return c.isOpen(x, z, 0.4) && !c.solids.some((s) => x > s.min[0] - 1 && x < s.max[0] + 1 && z > s.min[2] - 1 && z < s.max[2] + 1);
+  };
+  for (let i = 0; i < 260; i++) {
+    const x = 125 + rnd() * 100, z = 201 + rnd() * 39;
+    if (!open(x, z)) continue;
+    if (rnd() < 0.6) c.place('shrub', x, z, { scale: 0.7 + rnd() * 0.8, angle: rnd() * 6 });
+    else c.place('rock', x, z, { scale: 0.6 + rnd() * 1.1, angle: rnd() * 6 });
+  }
+}
+
+// ——————————————————————————————————————————————————————————— The superhighway, and the far side
+
+function superhighway(c) {
+  const X = 232;
+  c.flat(X, 0, 11, SIZE, 0, { surface: 'highway' });
+  c.flat(X + 5, 4, 1, SIZE - 8, 0.5, { surface: 'concrete' });
+  // Crossovers in the barrier, for the police and the breakdown trucks (and balls).
+  for (const z of [120, 200]) c.flat(X + 5, z, 1, 3, 0, { surface: 'highway' });
+  for (let z = 0; z < SIZE; z += 3) {
+    c.mark(X + 2.94, z, 0.12, 1.6);
+    c.mark(X + 7.94, z, 0.12, 1.6);
+  }
+  c.mark(X + 0.9, 0, 0.1, SIZE, '#f2f0e8').mark(X + 10, 0, 0.1, SIZE, '#f2f0e8');
+  // Tunnels where it goes through the bank at each end, and nothing gets past them.
+  c.prop('tunnel', X, 0, { w: 11, d: 4, facing: 1 });
+  c.prop('tunnel', X, SIZE - 4, { w: 11, d: 4, facing: -1 });
+  c.solid(X - 0.8, 0, 0, X + 11.8, 4.2, 3.9);
+  c.solid(X - 0.8, 0, SIZE - 3.9, X + 11.8, 4.2, SIZE);
+  c.gpu('On the central reservation', X + 5.5, 109.7, { y: 0.5 });
+
+  // The far side: the hill with the cookie banner on it, the grass all the way down to the corner.
+  c.flat(243, 92, 8, 30, 2.7, { surface: 'grass', wall: '#6a4a2c' });
+  c.prop('billboard', 249.6, 104, { text: 'ACCEPT ALL\nCOOKIES?', tag: 'REJECT ALL · 47 MORE STEPS' });
+  c.solid(249.2, 2.7, 101.6, 250.0, 6.5, 106.4);
+  c.gpu('Under the cookie banner', 244.8, 94.5, { y: 2.7 });
+  c.likeLine(246.5, 126, 246.5, 244, 16);
+  c.likeLine(246.5, 10, 246.5, 88, 10);
+  c.gpu('The edge of the feed', SIZE - 3.4, SIZE - 3.4, { y: berm(SIZE - 3.4, SIZE - 3.4) });
+}
+
+// ——————————————————————————————————————————————————————————— The traffic
+
+/**
+ * Two rings round the north of the city, one each way; rings round
+ * Brussels and Hype Valley, and round the middle of the Alignment District,
+ * Portland Heights and the Timeline; trucks round the compute farm; the
+ * trolley, round its problem; and the superhighway, which never stops.
  */
 function traffic(c) {
-  c.road([[9, 9], [87, 9], [87, 53], [9, 53]], { cars: 6, speed: 4.2 });
-  c.road([[7, 7], [7, 55], [89, 55], [89, 7]], { cars: 6, speed: 4.6 });
-  c.road([[29, 9], [67, 9], [67, 29], [29, 29]], { cars: 3, speed: 3.6 });
-  c.road([[27, 29], [27, 55], [69, 55], [69, 29]], { cars: 3, speed: 3.8 });
-  c.road([[92, 55], [106.5, 55], [106.5, 41], [101, 41], [101, 53], [92, 53]], { cars: 2, speed: 2.4 });
-  c.road([[48, 64], [48, 118], [104, 118], [104, 64]], { cars: 2, speed: 3.4, kind: 'truck' });
+  c.road([[9, 9], [227, 9], [227, 85], [9, 85]], { cars: 10, speed: 4.2 });
+  c.road([[7, 7], [7, 87], [229, 87], [229, 7]], { cars: 10, speed: 4.6 });
+  c.road([[33, 35], [54, 35], [54, 59], [33, 59]], { cars: 2, speed: 3.4 });
+  c.road([[105, 35], [131, 35], [131, 59], [105, 59]], { cars: 3, speed: 3.6 });
+  c.road([[106, 113], [131, 113], [131, 137], [106, 137]], { cars: 3, speed: 3.6 });
+  c.road([[104, 111], [104, 139], [133, 139], [133, 111]], { cars: 3, speed: 3.8 });
+  c.road([[159, 127], [227, 127], [227, 165], [159, 165]], { cars: 4, speed: 4 });
+  c.road([[9, 167], [121, 167], [121, 219], [9, 219]], { cars: 6, speed: 4.2 });
+  c.road([[7, 165], [7, 221], [123, 221], [123, 165]], { cars: 6, speed: 4.2 });
+  c.road([[123, 199], [227, 199], [227, 242], [123, 242]], { cars: 4, speed: 3.4, kind: 'truck' });
+  c.road([[229, 197], [121, 197], [121, 244], [229, 244]], { cars: 4, speed: 4.2 });
+  c.road([[197, 51], [215, 51], [215, 65], [197, 65]], { cars: 1, speed: 2.4 });
   // The superhighway: open at both ends, into the tunnels.
-  c.road([[113, -3], [113, SIZE + 3]], { cars: 3, speed: 7.5, kind: 'truck', brakes: false, open: true });
-  c.road([[115, -3], [115, SIZE + 3]], { cars: 3, speed: 9, kind: 'car', brakes: false, open: true });
-  c.road([[118, SIZE + 3], [118, -3]], { cars: 3, speed: 9.5, kind: 'car', brakes: false, open: true });
-  c.road([[120, SIZE + 3], [120, -3]], { cars: 3, speed: 7, kind: 'tanker', brakes: false, open: true });
+  const X = 232;
+  c.road([[X + 2, -3], [X + 2, SIZE + 3]], { cars: 5, speed: 7.5, kind: 'truck', brakes: false, open: true });
+  c.road([[X + 4, -3], [X + 4, SIZE + 3]], { cars: 5, speed: 9, kind: 'car', brakes: false, open: true });
+  c.road([[X + 7, SIZE + 3], [X + 7, -3]], { cars: 5, speed: 9.5, kind: 'car', brakes: false, open: true });
+  c.road([[X + 9, SIZE + 3], [X + 9, -3]], { cars: 5, speed: 7, kind: 'truck', brakes: false, open: true });
+}
+
+// ——————————————————————————————————————————————————————————— The people
+
+/**
+ * The people. Nobody is placed on a roof or in a wall (`map.crowd` sees to
+ * that). The Pause protest is in the plaza, where it has been for a year;
+ * the Eurocrats are on strike on the forecourt; the accelerationists are
+ * out in Hype Valley and on the compute farm; everywhere else are the reply
+ * guys.
+ */
+function crowds(c) {
+  let seed = 1;
+  const at = (kind, x, z, w, d, n, opts = {}) => c.crowd(kind, x, z, w, d, n, { seed: seed++, ...opts });
+  // Portland Heights.
+  at('commune', 11, 11, 18, 20, 3); at('commune', 57, 36, 19, 22, 5); at('theorist', 34, 10, 19, 22, 3);
+  at('scroller', 34, 62, 19, 22, 4); at('scroller', 57, 10, 19, 22, 2); at('anarchist', 34, 36, 19, 22, 4);
+  at('theorist', 57, 62, 19, 22, 2); at('replyguy', 10, 62, 20, 22, 2); at('drunk', 10, 36, 20, 22, 1);
+  // The Alignment District: the plaza, the stage, the offices, the building site.
+  at('pauser', 107, 36, 23, 22, 8, { range: 4 }); at('doomer', 107, 36, 23, 22, 3); at('altruist', 107, 36, 23, 22, 2);
+  at('pauser', 134, 44, 22, 13, 7, { range: 4 }); at('doomer', 134, 44, 22, 13, 3); at('purist', 134, 36, 22, 22, 2);
+  at('forecaster', 80, 36, 23, 22, 4); at('rationalist', 134, 62, 22, 22, 5); at('longtermist', 80, 10, 23, 22, 2);
+  at('researcher', 80, 10, 23, 22, 2); at('altruist', 107, 62, 23, 22, 5); at('longtermist', 107, 62, 23, 22, 1);
+  at('substacker', 80, 62, 23, 22, 2); at('farmer', 134, 10, 22, 22, 2); at('replyguy', 107, 10, 23, 22, 2);
+  at('gatekeeper', 80, 62, 23, 22, 1);
+  // The Ivory Tower.
+  at('rationalist', 160, 10, 66, 74, 5); at('researcher', 160, 10, 66, 74, 5); at('theorist', 160, 10, 66, 74, 4);
+  at('purist', 160, 10, 66, 74, 3); at('longtermist', 160, 10, 66, 74, 2); at('forecaster', 160, 10, 66, 74, 2);
+  at('gatekeeper', 160, 46, 66, 38, 1); at('podcaster', 160, 10, 66, 74, 1);
+  // The Pause Compound.
+  at('pauser', 12, 90, 62, 72, 8, { range: 4 }); at('doomer', 12, 90, 62, 72, 6); at('forecaster', 12, 90, 62, 72, 3);
+  at('researcher', 12, 90, 62, 72, 3); at('purist', 12, 90, 62, 72, 2); at('rationalist', 12, 90, 62, 72, 2);
+  c.foe('prophet', 48.5, 151.5, { range: 2.5, notice: 8 });
+  // The Timeline.
+  at('replyguy', 80, 88, 76, 22, 6, { range: 5 }); at('farmer', 107, 114, 23, 22, 4); at('replyguy', 107, 114, 23, 22, 4);
+  at('substacker', 80, 88, 76, 22, 4); at('thoughtleader', 80, 88, 76, 22, 3); at('gatekeeper', 134, 114, 22, 22, 2);
+  at('scroller', 134, 114, 22, 22, 3); at('replyguy', 80, 114, 23, 22, 3); at('farmer', 134, 140, 22, 24, 4);
+  at('substacker', 80, 140, 50, 24, 3); at('podcaster', 107, 140, 23, 24, 2); at('drunk', 80, 88, 76, 22, 1);
+  // Hype Valley.
+  at('accelerationist', 160, 88, 66, 36, 6, { maxH: 7 }); at('vc', 160, 128, 66, 36, 5, { maxH: 3.5 });
+  at('podcaster', 176, 128, 14, 20, 3); at('thoughtleader', 160, 128, 66, 36, 4, { maxH: 3.5 }); at('accelerationist', 160, 128, 66, 36, 3, { maxH: 3.5 });
+  // Brussels-sur-Mer.
+  at('eurocrat', 10, 168, 52, 24, 6); at('eurocrat', 66, 168, 54, 24, 3); at('striker', 66, 168, 54, 24, 6);
+  at('commuter', 66, 168, 54, 24, 3); at('commuter', 66, 196, 54, 22, 3); at('raver', 10, 196, 52, 22, 6);
+  at('doorman', 30, 196, 28, 8, 2); at('raver', 6, 224, 114, 8, 4); at('eurocrat', 66, 196, 54, 22, 3);
+  at('drunk', 66, 196, 54, 22, 1);
+  // The Compute Farm.
+  at('accelerationist', 124, 200, 100, 40, 6); at('vc', 124, 200, 100, 40, 3); at('podcaster', 124, 200, 100, 40, 2);
+  at('thoughtleader', 180, 168, 46, 28, 2); at('accelerationist', 180, 168, 46, 28, 3);
+  // The far side, up on the hill.
+  at('accelerationist', 243, 92, 8, 30, 3, { maxH: 3 });
 }

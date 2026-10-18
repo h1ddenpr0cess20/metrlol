@@ -27,12 +27,15 @@ export const QUIPS = Object.freeze({
     'The Alignment District': ['Everyone here has a p(doom) and a Substack. Mostly the Substack.', 'The Alignment District. Where the problem is hard and the posts are long.'],
     'Brussels-sur-Mer': ['There\'s a form for rolling in here. I\'ve filed it. It\'ll be ruled on in 2031.', 'Welcome to Europe. Please accept all cookies. And all regulations.'],
     'The Information Superhighway': ['Four lanes of hot takes, no brakes. Mind the trucks.', 'The feed. Nobody brakes. Nobody reads.'],
-    'The Compute Farm': ['Token pumps as far as the eye can see. Don\'t stand under the head.', 'Compute. Every side of the argument wants it. Nobody is willing to share it.'],
-    'The Pause Compound': ['The Pause Compound. All stop signs and no go signs.', 'Flare alley. Warm takes, literally.'],
+    'The Ivory Tower': ['The campus. Three laps round the tower and you\'re above it all. Like them.', 'Office hours. Nobody came. Nobody ever comes.'],
+    'The Timeline': ['Downtown. Every screen is about you. None of them are nice.', 'The Timeline. Scroll on. There is no end. There is, actually, at the end.'],
+    'Hype Valley': ['Up the peak of inflated expectations. Mind the trough on the other side.', 'Hype Valley. Everyone here is raising. Nobody is saying what.'],
+    'The Compute Farm': ['Server halls as far as the eye can see. Mind the hot aisle.', 'Compute. Every side of the argument wants it. Nobody is willing to share it.'],
+    'The Pause Compound': ['The Pause Compound. All stop signs and no go signs.', 'Hot takes alley. Warm takes, literally.'],
     'The Far Side': ['The edge of the map. Even the discourse doesn\'t come out this far.'],
   },
   ready: ['Let\'s go. I\'m not here to make friends.', 'Alright. Who needs trolling first?', 'Fine. Let\'s do this. Loudly.', 'A spiked ball in a city of opinions. What could go wrong.'],
-  won: ['All twenty-two. The compute is mine. The discourse can have the rest.', 'Every golden GPU. Please do not subscribe.'],
+  won: ['All forty-two. The answer, it turns out. The compute is mine.', 'Forty-two golden GPUs. The discourse can have the rest.', 'Every golden GPU. Please do not subscribe.'],
 });
 
 /** One line from `list`, never the same one twice running for the same `kind`. */

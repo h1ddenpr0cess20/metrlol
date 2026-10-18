@@ -1,8 +1,8 @@
 import { grainy } from '../sculpt/skins.js';
 
 /**
- * The traffic, sculpted: a sedan, a hatchback, a pickup, a box truck, a
- * tanker, and a rusted-out junker for the yard. Each faces +z with its
+ * The traffic, sculpted: a sedan, a hatchback, a pickup, a box truck,
+ * and a rusted-out junker for the yard. Each faces +z with its
  * wheels on the ground at y = 0. The body is baked white and takes its
  * colour from its `paint` material, so one bake does every colour of car.
  */
@@ -126,8 +126,8 @@ export const junker = vehicle('junker', (s) => {
   s.sphere([-0.2, 0.92, -0.2], 0.16, { op: 'sub', k: 0.08 });
 }, { materials: { ...MATERIALS, paint: { roughness: 0.85 }, glass: { roughness: 0.4, metalness: 0.2 }, lamp: { roughness: 0.6 }, tail: { roughness: 0.6 } } });
 
-/** A cab-over truck: the cab at the front, the chassis rails, and behind it a box or a tank. */
-function truck(s, { L, tank }) {
+/** A cab-over truck: the cab at the front, the chassis rails, and behind it a box. */
+function truck(s, { L }) {
   const hl = L / 2, hw = 0.55;
   const cab = 1.0;
   // The cab: tall and blunt, glass across the front and down the doors.
@@ -140,38 +140,27 @@ function truck(s, { L, tank }) {
   s.box([0, 1.22, hl + 0.03], [hw * 0.9, 0.025, 0.06], 0.015, { color: WHITE, mat: 'paint', k: 0.01 });
   for (let i = -2; i <= 2; i++) s.sphere([i * 0.16, 1.27, hl + 0.02], 0.022, { color: '#ffb040', mat: 'lamp', k: 0.004 });
   s.box([0, 1.32, hl - cab / 2 - 0.05], [hw * 0.92, 0.06, cab * 0.4], 0.05, { color: WHITE, mat: 'paint', k: 0.04 });
-  // Chassis rails, fuel tanks, mudguards.
+  // Chassis rails, battery boxes, mudguards.
   s.mirror((m) => {
     s.box([m * 0.32, 0.3, -cab / 2], [0.05, 0.06, hl - cab / 2], 0.02, { color: TRIM, mat: 'trim', k: 0.01 });
     s.cylinder([m * 0.44, 0.34, hl - cab - 0.35], 0.12, 0.25, { color: CHROME, mat: 'chrome', k: 0.01, round: 0.03, rot: [Math.PI / 2, 0, 0] });
   });
   ends(s, { hl, hw, y: 0.48, back: false, grille: 0.35 });
-  if (tank) {
-    // A polished tank on its cradles, a catwalk along the top, the hose cabinet.
-    const tl = L - cab - 0.15;
-    s.limb([0, 0.98, -hl + 0.2], [0, 0.98, -hl + 0.2 + tl - 0.4], 0.52, 0.52, { color: '#dfe3e8', mat: 'alloy', k: 0.02 });
-    for (let z = -hl + 0.5; z < hl - cab - 0.3; z += 0.9) s.torus([0, 0.98, z], 0.53, 0.025, { color: '#9aa0a8', mat: 'alloy', k: 0.006, rot: [Math.PI / 2, 0, 0] });
-    s.box([0, 1.52, -hl + tl / 2], [0.12, 0.02, tl / 2 - 0.3], 0.01, { color: '#8a8f96', mat: 'trim', k: 0.006 });
-    s.box([0, 0.55, -hl + tl * 0.45], [hw * 0.95, 0.12, 0.35], 0.04, { color: '#c8382c', mat: 'paint', k: 0.02 });
-    s.paint((p) => Math.max(Math.abs(p[1] - 0.98) - 0.1, p[2] - (hl - cab - 0.1)), '#c8382c', 0.01);
-  } else {
-    // A box body, ribbed, with a roller door at the back.
-    const bl = L - cab - 0.08;
-    s.box([0, 1.05, -hl + bl / 2], [hw + 0.02, 0.62, bl / 2], 0.04, { color: '#eceae4', mat: 'trim', k: 0.02 });
-    s.part('detail', () => {
-      s.mirror((m) => {
-        for (let z = -hl + 0.2; z < -hl + bl; z += 0.32) s.box([m * (hw + 0.03), 1.05, z], [0.015, 0.6, 0.02], 0.008, { color: '#d0cec8', mat: 'trim', k: 0.004 });
-      });
-      for (let y = 0.55; y < 1.65; y += 0.15) s.box([0, y, -hl - 0.01], [hw * 0.92, 0.015, 0.015], 0.008, { color: '#b8b6b0', mat: 'trim', k: 0.003 });
+  // A box body, ribbed, with a roller door at the back.
+  const bl = L - cab - 0.08;
+  s.box([0, 1.05, -hl + bl / 2], [hw + 0.02, 0.62, bl / 2], 0.04, { color: '#eceae4', mat: 'trim', k: 0.02 });
+  s.part('detail', () => {
+    s.mirror((m) => {
+      for (let z = -hl + 0.2; z < -hl + bl; z += 0.32) s.box([m * (hw + 0.03), 1.05, z], [0.015, 0.6, 0.02], 0.008, { color: '#d0cec8', mat: 'trim', k: 0.004 });
     });
-    s.mirror((m) => s.box([m * hw * 0.8, 0.52, -hl + 0.005], [0.08, 0.035, 0.02], 0.01, { color: '#ff3a24', mat: 'tail', k: 0.006 }));
-  }
+    for (let y = 0.55; y < 1.65; y += 0.15) s.box([0, y, -hl - 0.01], [hw * 0.92, 0.015, 0.015], 0.008, { color: '#b8b6b0', mat: 'trim', k: 0.003 });
+  });
+  s.mirror((m) => s.box([m * hw * 0.8, 0.52, -hl + 0.005], [0.08, 0.035, 0.02], 0.01, { color: '#ff3a24', mat: 'tail', k: 0.006 }));
   const back = -hl + 0.55;
   wheels(s, [[-hw + 0.04, hl - 0.55], [hw - 0.04, hl - 0.55], [-hw + 0.04, back], [hw - 0.04, back], [-hw + 0.04, back + 0.5], [hw - 0.04, back + 0.5]], 0.22, 0.08, false);
 }
 
 export const boxtruck = vehicle('boxtruck', (s) => truck(s, { L: 2.7 }), { cell: 0.05 });
-export const tanker = vehicle('tanker', (s) => truck(s, { L: 4.2, tank: true }), { cell: 0.055 });
 
 /** Which model each kind of traffic is drawn with. */
-export const VEHICLES = { sedan, hatchback, pickup, junker, boxtruck, tanker };
+export const VEHICLES = { sedan, hatchback, pickup, junker, boxtruck };

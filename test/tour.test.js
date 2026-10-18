@@ -11,5 +11,5 @@ test('the autopilot finds every golden GPU in one go, without being blunted', ()
   const golden = result.run.gpus.map((g) => g.name);
   assert.deepEqual([...result.found].sort(), [...golden].sort());
   for (const leg of TOUR.filter((l) => l.expect)) assert.ok(result.found.includes(leg.expect), leg.expect);
-  assert.ok(result.time < 900, `took ${result.time.toFixed(0)}s`);
+  assert.ok(result.time < 2400, `took ${result.time.toFixed(0)}s`);
 });

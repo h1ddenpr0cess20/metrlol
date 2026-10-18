@@ -6,7 +6,7 @@ import { createHazards, flareAt, liftAt, nodAt } from '../src/hazards.js';
 import { buildMap, TownMap } from '../src/map.js';
 import { createBall, placeBall } from '../src/physics.js';
 
-test('a pumpjack nods: down on the ground for a moment, up for longer', () => {
+test('a stamp comes down: on the tile for a moment, up for longer', () => {
   let down = 0, n = 0;
   for (let t = 0; t < 3.2; t += 0.01, n++) {
     const h = nodAt(t, 3.2);
@@ -18,7 +18,7 @@ test('a pumpjack nods: down on the ground for a moment, up for longer', () => {
   assert.ok(down / n > 0.05 && down / n < 0.3, `down ${down / n} of the time`);
 });
 
-test('a flare burns for its share of the period, and is out the rest', () => {
+test('a vent goes off for its share of the period, and is quiet the rest', () => {
   let lit = 0, n = 0;
   for (let t = 0; t < 3; t += 0.005, n++) if (flareAt(t, 3, 0, 0.35) > 0) lit++;
   assert.ok(Math.abs(lit / n - 0.35) < 0.02);
@@ -35,26 +35,26 @@ test('a lift waits at each end and glides between', () => {
 function yard() {
   const m = new TownMap({ name: 't', cols: 40, rows: 40 });
   m.flat(0, 0, 40, 40, 0, { surface: 'concrete' });
-  m.drum(10, 10, { range: 6 });
+  m.reel(10, 10, { range: 6 });
   m.flare(30, 30);
   const { world } = buildMap(m);
   return { m, world, hazards: createHazards(GFX, m, world, { killY: -8 }) };
 }
 
-test('a drum rolls after a ball that comes near its patch, and goes home after', () => {
+test('a reel rolls after a ball that comes near its patch, and goes home after', () => {
   const { hazards } = yard();
-  const drum = hazards.drums[0].ball;
+  const reel = hazards.reels[0].ball;
   const ball = createBall({ r: 0.36 });
   placeBall(ball, 14.5, 0.36, 10.5);
   for (let t = 0; t < 1.5; t += 1 / 120) hazards.step(1 / 120, t, ball);
-  assert.ok(drum.x > 11.5, 'it came');
-  // The ball rolls off out of reach: the drum gives up and goes home.
+  assert.ok(reel.x > 11.5, 'it came');
+  // The ball rolls off out of reach: the reel gives up and goes home.
   placeBall(ball, 35, 0.36, 10.5);
   for (let t = 0; t < 8; t += 1 / 120) hazards.step(1 / 120, t, ball);
-  assert.ok(Math.hypot(drum.x - 10.5, drum.z - 10.5) < 1.2, `home again, at ${drum.x},${drum.z}`);
+  assert.ok(Math.hypot(reel.x - 10.5, reel.z - 10.5) < 1.2, `home again, at ${reel.x},${reel.z}`);
 });
 
-test('a burning flare catches a ball over it; an unlit one doesn\'t', () => {
+test('a hot take going off catches a ball over it; a quiet vent doesn\'t', () => {
   const { hazards } = yard();
   const ball = createBall({ r: 0.36 });
   placeBall(ball, 30.5, 0.36, 30.5);

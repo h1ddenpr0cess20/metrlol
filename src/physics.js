@@ -1,6 +1,6 @@
 /**
  * Ball physics: spheres rolling over a triangle soup (the town) and a few
- * dozen boxes (cars, pumps, lifts, pumpjack heads). No engine — the ball
+ * dozen boxes (cars, lifts, rubber stamps). No engine — the ball
  * is the only thing that has to feel right, so it is done by hand: gravity and a push from the
  * controls, then the sphere is pushed out of whatever it sinks into and loses
  * the velocity it had into it.
@@ -411,7 +411,7 @@ export function stepBall(ball, world, ax, az, dt, { push = PUSH, airPush = AIR_P
 
 /**
  * Two balls that touch push apart, sharing the impulse by mass, with a lively
- * bounce: a rolling drum knocks the ball about rather than stopping dead.
+ * bounce: a rolling reel knocks the ball about rather than stopping dead.
  */
 export function collideBalls(a, b, restitution = 0.9) {
   const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;

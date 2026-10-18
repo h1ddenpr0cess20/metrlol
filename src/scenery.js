@@ -9,9 +9,8 @@ import { surfaceMaterial, wallMaterial } from './textures.js';
  * The world as it is drawn: the tiles (a mesh per surface for each square
  * of the map, each with its own painted texture), their walls, the paint on
  * the roads, the decks, every prop, and the land beyond the bank — scrub
- * running out to the
- * horizon, with pylons, wind turbines, data centres and a water tower on
- * it, so the city sits in a country and not in a void.
+ * running out to the horizon, with pylons, wind turbines, data centres and
+ * a water tower on it, so the city sits in a country and not in a void.
  */
 
 export function createWorldMeshes(GFX, map, built) {

@@ -30,6 +30,21 @@ export const streetlamp = {
   },
 };
 
+/** An e-scooter, left in the middle of everything: a deck, the stem, the bars, two small wheels, a lit display. */
+export const scooter = {
+  name: 'scooter', cell: 0.016,
+  materials: { paint: PAINTED, rubber: { roughness: 0.9 }, metal: METAL, screen: GLOW('#9affb8', 1.4) },
+  colliders: [{ box: [-0.14, 0, -0.42, 0.14, 0.95, 0.42] }],
+  sculpt(s) {
+    const green = grainy('#2aa84a', 0.1, 40);
+    s.box([0, 0.1, 0], [0.08, 0.025, 0.3], 0.02, { color: green, mat: 'paint', k: 0.01 });
+    s.limb([0, 0.12, 0.3], [0, 0.92, 0.36], 0.02, 0.018, { color: '#3a3d44', mat: 'metal', k: 0.01 });
+    s.limb([-0.2, 0.92, 0.36], [0.2, 0.92, 0.36], 0.014, 0.014, { color: '#1c1c20', mat: 'rubber', k: 0.006 });
+    s.box([0, 0.93, 0.33], [0.04, 0.012, 0.03], 0.006, { color: '#9affb8', mat: 'screen', k: 0.004 });
+    for (const z of [-0.3, 0.34]) s.cylinder([0, 0.07, z], 0.07, 0.025, { color: '#1c1c20', mat: 'rubber', k: 0.006, round: 0.012, rot: [0, 0, Math.PI / 2] });
+  },
+};
+
 /** A fire hydrant: red, a bonnet on top, two caps on chains, a pentagon nut. */
 export const hydrant = {
   name: 'hydrant', cell: 0.016,
@@ -196,4 +211,4 @@ export const statue = {
   },
 };
 
-export const STREET = { statue, streetlamp, hydrant, mailbox, bench, bin, cone, tree, pine, shrub, rock, tyres, dumpster };
+export const STREET = { scooter, statue, streetlamp, hydrant, mailbox, bench, bin, cone, tree, pine, shrub, rock, tyres, dumpster };

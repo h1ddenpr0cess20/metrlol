@@ -10,7 +10,7 @@ import { HOME } from './view.js';
 
 /**
  * The game: one city, all of it open from the start. Roll anywhere; find the
- * 22 golden GPUs; smash the people in the way, fast enough to do it in one
+ * 42 golden GPUs; smash the people in the way, fast enough to do it in one
  * go, and say something unkind about it afterwards. Get blunted and the ball
  * is back at the last whetstone it rolled over; go into the tar and it's
  * back on the last firm ground. What it has found is kept between visits.
@@ -161,7 +161,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
       mace.hurtTo(run.spikes / SPIKES);
       mace.react('hurt');
       audio.squeak();
-      if (out.hits.includes('car') || out.hits.includes('drum') || out.hits.includes('foe')) {
+      if (out.hits.includes('car') || out.hits.includes('reel') || out.hits.includes('foe')) {
         effects.sparks(b.x, b.y, b.z);
         audio.clunk(Math.max(out.impact, 5));
       }

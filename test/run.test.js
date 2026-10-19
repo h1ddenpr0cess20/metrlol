@@ -6,7 +6,7 @@ import { TownMap } from '../src/map.js';
 import { placeBall } from '../src/physics.js';
 import { SPIKES, createRun, putBack, respawn, STEP, stepRun } from '../src/run.js';
 
-/** A little test yard: level ground, a tar pit, a pump, a flare, a pumpjack, a tower to fall off, a road. */
+/** A little test yard: level ground, a tar pit, a vent, a rubber stamp, a tower to fall off, a road. */
 function yard() {
   const m = new TownMap({ name: 'yard', cols: 40, rows: 30 });
   m.flat(0, 0, 40, 30, 0, { surface: 'concrete' });
@@ -15,7 +15,7 @@ function yard() {
   m.flat(20, 2, 2, 2, 6, { surface: 'concrete' });
   m.whetstone("Yard", 5.5, 10.5);
   m.flare(30, 3);
-  m.pumpjack(30, 12, { period: 3 });
+  m.stamp(30, 12, { period: 3 });
   m.flat(0, 20, 40, 4, 0, { surface: 'road' });
   m.road([[1, 22], [39, 22]], { cars: 1, speed: 6, open: true, brakes: false });
   m.gpu('Shiny', 3.5, 14.5);
@@ -86,7 +86,7 @@ test('tar swallows it, and it goes back to the last firm ground', () => {
   assert.ok(run.map.isSafe(Math.floor(run.ball.x), Math.floor(run.ball.z)));
 });
 
-test('a gas flare burns it and throws it up', () => {
+test('a hot take out of a vent burns it and throws it up', () => {
   const run = createRun(GFX, { map: yard() });
   placeBall(run.ball, 30.5, 0.36, 3.5);
   run.time = 2.9;
@@ -96,10 +96,10 @@ test('a gas flare burns it and throws it up', () => {
   assert.ok(run.spikes < SPIKES && run.spikes > 0);
 });
 
-test('a pumpjack coming down on it pops it outright', () => {
+test('a stamp coming down on it pops it outright', () => {
   const run = createRun(GFX, { map: yard() });
   placeBall(run.ball, 30.5, 0.36, 12.5);
-  // Half way through its nod the head is at the top, about to come down.
+  // Half way through its stroke the stamp is at the top, about to come down.
   run.time = 1.5;
   const outs = roll(run, 2);
   assert.equal(outs.find((o) => o.outcome)?.outcome, 'squashed');

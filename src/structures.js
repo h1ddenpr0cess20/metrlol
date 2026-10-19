@@ -3,10 +3,12 @@ import { linearRGB } from './map.js';
 import { wallMaterial } from './textures.js';
 
 /**
- * The town's bigger things — tanks, the derrick, the crane, the canopy, the
- * car wash, scaffolding, the pipeline and the pipe racks, the flare stack,
- * the tunnels, the billboard, the fence round it all — drawn from the
- * map's props (`map.props`). What's solid about them is on the map already.
+ * The city's bigger things — tanks and cooling towers, the mast, the crane,
+ * the charging canopy, the sandbox, scaffolding, the chilled water main,
+ * the screens on the towers, the parasols on the beach, containers, tents,
+ * market stalls, solar panels, the tunnels, the billboard, the fence round
+ * it all — drawn from the map's props
+ * (`map.props`). What's solid about them is on the map already.
  *
  * Surfaces that want a texture (a tank's welded plates, the chain-link,
  * the hedges, concrete) are built of panels a tile or so across, each with
@@ -99,22 +101,40 @@ function lattice(k, x, y, z, w, top, h, step, colour, t = 0.035) {
   }
 }
 
-/** A canvas of words, as a texture; null where there's no document (the tests). */
-function words(GFX, lines, { w = 512, h = 256, bg = '#f4f1ea', fg = '#1c1b1a', font = '900 120px', accent = null } = {}) {
+const FONT = 'Anton, "Arial Black", Impact, system-ui, sans-serif';
+
+/**
+ * Words on a canvas the shape of the sign they go on (`w` by `h` tiles), as a
+ * texture: the lines centred, and set as big as fits the part of it they go in
+ * (`area`, top and bottom as fractions of its height), never so big a single
+ * line takes more than `cap` of it. `accent` paints over the background first.
+ * Null where there's no document (the tests). The canvas keeps the height the
+ * letters came out, in tiles (`fit`), for checking they can be read.
+ */
+function words(GFX, lines, { w, h, bg = '#f4f1ea', fg = '#1c1b1a', accent = null, area = [0, 1], cap = 0.62 }) {
   if (typeof document === 'undefined') return null;
+  const ppt = Math.min(256, 4096 / w);
+  const W = Math.round(w * ppt), H = Math.max(32, Math.round(h * ppt));
   const c = document.createElement('canvas');
-  c.width = w; c.height = h;
+  c.width = W; c.height = H;
   const ctx = c.getContext('2d');
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
-  if (accent) accent(ctx, w, h);
+  ctx.fillRect(0, 0, W, H);
+  if (accent) accent(ctx, W, H);
+  const list = lines.split('\n');
+  const top = H * area[0], tall = H * (area[1] - area[0]);
+  const margin = Math.min(W, tall) * 0.1;
+  let size = Math.min((tall - margin * 2) / (list.length * 1.08), tall * cap);
+  ctx.font = `400 ${size}px ${FONT}`;
+  const widest = Math.max(...list.map((l) => ctx.measureText(l).width));
+  if (widest > W - margin * 2) size *= (W - margin * 2) / widest;
+  ctx.font = `400 ${size}px ${FONT}`;
   ctx.fillStyle = fg;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const list = lines.split('\n');
-  const size = parseInt(font.split(' ')[1], 10);
-  ctx.font = `${font} Anton, "Arial Black", Impact, system-ui, sans-serif`;
-  list.forEach((line, i) => ctx.fillText(line, w / 2, h / 2 + (i - (list.length - 1) / 2) * size * 1.05));
+  list.forEach((line, i) => ctx.fillText(line, W / 2, top + tall / 2 + (i - (list.length - 1) / 2) * size * 1.08));
+  c.fit = size / ppt;
+  c.text = lines;
   const t = new GFX.CanvasTexture(c);
   t.colorSpace = GFX.SRGBColorSpace;
   t.anisotropy = 8;
@@ -173,6 +193,16 @@ const DRAW = {
     for (const s of [0.3, p.length - 0.3]) {
       k.cyl([p.x + s, y + 0.22, p.z], 0.03, 0.45, '#8a8f9a', { finish: 'shiny' });
       k.cyl([p.x + s, y + 0.01, p.z], 0.12, 0.02, '#5a6068');
+    }
+  },
+
+  /** A handrail from (x, y0, z) down to (x1, y1, z1), on posts. */
+  handrail(k, t, p) {
+    const a = [p.x, p.y0, p.z], b = [p.x1, p.y1, p.z1];
+    k.beam(a, b, 0.035, '#c8ccd2', { finish: 'shiny', segments: 10 });
+    for (const f of [0.05, 0.5, 0.95]) {
+      const q = a.map((v, i) => v + (b[i] - v) * f);
+      k.beam(q, [q[0], q[1] - 0.85, q[2]], 0.028, '#8a8f9a', { finish: 'shiny' });
     }
   },
 
@@ -244,20 +274,6 @@ const DRAW = {
     for (let i = 1; i < 5; i++) for (let j = 1; j < 5; j++) map.lamp(x + (w * i) / 5, z + (d * j) / 5, { colour: '#f4f6ff', reach: 3.4, height: h - 0.1, y: 0, glow: 0.45 });
   },
 
-  carwash(k, t, p) {
-    const { x, z, d } = p;
-    // Brushes: tall spinning mops and one over the top, the spray bar, the drip of water.
-    for (const s of [1.5, 4]) {
-      for (const zz of [0.7, d - 0.7]) {
-        k.cyl([x + s, 1.15, z + zz], 0.08, 1.9, '#c8ccd2', { finish: 'shiny', segments: 8 });
-        for (let r = 0; r < 6; r++) k.cyl([x + s, 0.35 + r * 0.3, z + zz], 0.4, 0.22, ['#3d8ad0', '#5aa8f0'][r % 2], { segments: 14 });
-      }
-      k.cyl([x + s, 2.0, z + d / 2], 0.3, d - 1.4, '#5aa8f0', { rot: [Math.PI / 2, 0, 0], segments: 14 });
-    }
-    k.slab(x + 2.8, 2.05, z, x + 2.9, 2.15, z + d, '#c8ccd2', { finish: 'shiny' });
-    for (let i = 0; i < 10; i++) k.cyl([x + 2.85, 2.0, z + 0.3 + i * 0.48], 0.02, 0.1, '#e8f4ff', { finish: 'glass' });
-  },
-
   billboard(k, t, p, y, map) {
     // Two steel legs, a catwalk, the board, the floodlights on it.
     for (const s of [-1.6, 1.6]) {
@@ -310,10 +326,10 @@ const DRAW = {
     }
   },
 
-  derrick(k, t, p) {
+  mast(k, t, p) {
     const { x, z, w, d, y, top } = p;
     const H = top - y + 7;
-    // The mast: red and white, tapering, braced; the crown block, a red light; rails round the deck; the lift's guide rails.
+    // Red and white, tapering, braced; the aerials at the top, a red light; rails round the deck; the lift's guide rails.
     lattice(k, x + w / 2, y, z + d / 2, w, 1.2, H, 1.5, RED, 0.045);
     lattice(k, x + w / 2, y + 0.75, z + d / 2, w * 0.98, 1.22, H - 0.75, 1.5, WHITE, 0.02);
     k.slab(x + w / 2 - 0.75, y + H, z + d / 2 - 0.75, x + w / 2 + 0.75, y + H + 0.4, z + d / 2 + 0.75, '#3a3d44');
@@ -341,8 +357,8 @@ const DRAW = {
 
   tank(k, t, p, y, map) {
     const { x, z, r, h, colour } = p;
-    // Welded plates all round, a shallow domed roof, a handrail round its rim, a ladder cage up the side, a band of colour.
-    t.cylinder('tankshell', x, z, r, 0, h, colour, { band: 1 });
+    // Welded plates all round (or concrete, a cooling tower), a shallow domed roof, a handrail round its rim, a ladder cage up the side, a band of colour.
+    t.cylinder(p.tex ?? 'tankshell', x, z, r, 0, h, colour, { band: 1 });
     const seg = 40;
     for (let i = 0; i < 6; i++) k.cyl([x, h + 0.02 + i * 0.03, z], r * (1 - i * 0.12), 0.04, '#b8bec6', { segments: seg });
     k.torus([x, h, z], r, 0.06, '#9aa0a8', { rot: [Math.PI / 2, 0, 0] });
@@ -373,77 +389,112 @@ const DRAW = {
     }
   },
 
-  stack(k, t, p, y, map) {
-    t.cylinder('tankshell', p.x, p.z, 0.7, 0, p.h, '#c8c2b4', { band: 1 });
-    for (let s = 1.5; s < p.h; s += 2.5) k.torus([p.x, y + s, p.z], 0.74, 0.05, RED, { rot: [Math.PI / 2, 0, 0] });
-    for (let s = 0.4; s < p.h; s += 0.4) k.cyl([p.x - 0.8, y + s, p.z], 0.012, 0.36, '#5a6068', { rot: [Math.PI / 2, 0, 0] });
-    k.cyl([p.x, y + p.h + 0.15, p.z], 0.75, 0.3, '#3a3d44');
-    map.lamp(p.x, p.z, { colour: '#ff9a3a', reach: 9, height: p.h + 1, y, glow: 1.4 });
-  },
-
-  piperack(k, t, p) {
-    const { x, z, to } = p;
-    for (let s = x + 0.5; s < to; s += 5) {
-      for (const dz of [-0.75, 0.75]) k.cyl([s, 1.7, z + dz], 0.08, 3.4, STEEL, { segments: 8, finish: 'shiny' });
-      k.slab(s - 0.1, 3.3, z - 0.85, s + 0.1, 3.45, z + 0.85, STEEL);
-      k.beam([s, 2.4, z - 0.75], [s, 3.3, z], 0.04, STEEL);
-    }
-    const cols = ['#c8c2b4', RED, YELLOW, '#3a7a3a', '#2a5aa8'];
-    for (let i = 0; i < 5; i++) {
-      k.cyl([(x + to) / 2, 3.6, z - 0.64 + i * 0.32], 0.13, to - x, cols[i], { rot: [0, 0, Math.PI / 2], finish: 'shiny', segments: 12 });
-      for (let s = x + 2; s < to; s += 4) k.torus([s, 3.6, z - 0.64 + i * 0.32], 0.15, 0.025, '#5a6068', { rot: [0, Math.PI / 2, 0] });
-    }
-  },
-
-  sphere(k, t, p, y) {
-    k.sphere([p.x, y + p.r + 1.2, p.z], p.r, '#e8e4dc', { finish: 'shiny', segments: 56 });
-    k.torus([p.x, y + p.r + 1.2, p.z], p.r * 1.003, 0.05, '#b8bec6', { rot: [Math.PI / 2, 0, 0], segments: 64 });
-    // Its legs: columns up to the equator, meeting the sphere where it's widest, as a real one stands; braced in crosses between.
-    const cy = y + p.r + 1.2, R = p.r * 0.985;
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * TAU, b = ((i + 1) / 8) * TAU;
-      const [x0, z0] = [p.x + Math.cos(a) * R, p.z + Math.sin(a) * R];
-      const [x1, z1] = [p.x + Math.cos(b) * R, p.z + Math.sin(b) * R];
-      k.cyl([x0, (y + cy) / 2, z0], 0.14, cy - y, STEEL, { segments: 10 });
-      k.cyl([x0, y + 0.15, z0], 0.26, 0.3, '#8a867e', { segments: 10 });
-      k.slab(x0 - 0.17, cy - 0.25, z0 - 0.17, x0 + 0.17, cy + 0.05, z0 + 0.17, STEEL);
-      k.beam([x0, y + 0.4, z0], [x1, cy - 1.0, z1], 0.035, '#5a6068');
-      k.beam([x1, y + 0.4, z1], [x0, cy - 1.0, z0], 0.035, '#5a6068');
-    }
-    k.beam([p.x + p.r * 0.9, y, p.z], [p.x + 0.3, y + p.r * 2 + 1.2, p.z], 0.04, '#5a6068');
-  },
-
-  valves(k, t, p, y) {
-    const L = p.length ?? 3;
-    k.cyl([p.x, y + 0.5, p.z], 0.13, 1, STEEL, { segments: 12, finish: 'shiny' });
-    for (const yy of [0.2, 0.55, 0.85]) k.cyl([p.x, y + yy, p.z], 0.2, 0.05, '#5a6068', { segments: 14, finish: 'shiny' });
-    k.cyl([p.x, y + 0.6, p.z + L / 2], 0.1, L, '#c8c2b4', { rot: [Math.PI / 2, 0, 0], finish: 'shiny', segments: 12 });
-    k.torus([p.x, y + 1.08, p.z], 0.18, 0.03, RED, { rot: [Math.PI / 2, 0, 0] });
-    k.beam([p.x - 0.18, y + 1.08, p.z], [p.x + 0.18, y + 1.08, p.z], 0.02, RED);
-    k.box([p.x, y + 0.6, p.z + L], [0.3, 0.3, 0.3], '#8a8f9a', { finish: 'shiny' });
-  },
-
-  cylinders(k, t, p, y) {
-    for (let i = 0; i < 4; i++) {
-      const c = ['#3a7a3a', '#e8e2d6', RED, '#2a5aa8'][i];
-      const cx = p.x + (i % 2) * 0.32, cz = p.z + Math.floor(i / 2) * 0.32;
-      k.cyl([cx, y + 0.45, cz], 0.13, 0.9, c, { segments: 14, finish: 'shiny' });
-      k.sphere([cx, y + 0.9, cz], 0.13, c, { finish: 'shiny' });
-      k.cyl([cx, y + 1.05, cz], 0.04, 0.12, '#c8ccd2', { finish: 'shiny' });
-    }
-    t.box('chainlink', p.x - 0.25, y, p.z - 0.25, p.x + 0.57, y + 1.1, p.z + 0.57, '#8a9098', { top: false, band: 1.1 });
-  },
-
   sign(k, t, p, y) {
     k.cyl([p.x, y + 0.6, p.z + 0.5], 0.04, 1.2, '#5a6068', { segments: 8 });
+    k.slab(p.x - 0.03, y + 0.84, p.z + 0.08, p.x + 0.03, y + 1.46, p.z + 0.92, '#3a3d44');
+  },
+
+  /** A column: plain, round, a cap on top. */
+  column(k, t, p, y) {
+    k.cyl([p.x, y + p.h / 2, p.z], p.r, p.h, p.colour ?? '#e8e4dc', { segments: 12, finish: 'shiny' });
+    k.cyl([p.x, y + p.h + 0.05, p.z], p.r + 0.05, 0.1, p.colour ?? '#e8e4dc', { segments: 12 });
+  },
+
+  /** A beach parasol: a pole, a striped canopy, a deckchair's worth of shade. */
+  parasol(k, t, p, y) {
+    const c = p.colour ?? '#1a3aa0';
+    k.cyl([p.x, y + 1.1, p.z], 0.035, 2.2, '#e8e4dc', { segments: 8 });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU;
+      k.beam([p.x, y + 2.25, p.z], [p.x + Math.cos(a) * 1.1, y + 1.85, p.z + Math.sin(a) * 1.1], 0.012, '#e8e4dc');
+    }
+    k.cone([p.x, y + 2.3, p.z], 1.15, 0.5, c, { segments: 16 });
+    k.cone([p.x, y + 2.31, p.z], 0.6, 0.26, '#f4f1ea', { segments: 16 });
+  },
+
+  /** A screen on a wall: a dark frame, its picture lit (see WORDS), facing `facing` quarter turns (0 toward +z). */
+  screen(k, t, p, y, map) {
+    const f = ((p.facing ?? 0) % 4 + 4) % 4, turn = f * Math.PI / 2;
+    const n = [Math.sin(turn), Math.cos(turn)], along = [n[1], -n[0]];
+    const hw = p.w / 2 + 0.08, at = y + p.h / 2;
+    const a = [p.x - along[0] * hw, p.z - along[1] * hw], b = [p.x + along[0] * hw, p.z + along[1] * hw];
+    k.slab(Math.min(a[0], b[0]) - Math.abs(n[0]) * 0.06, at - p.h / 2 - 0.08, Math.min(a[1], b[1]) - Math.abs(n[1]) * 0.06,
+      Math.max(a[0], b[0]) + Math.abs(n[0]) * 0.06, at + p.h / 2 + 0.08, Math.max(a[1], b[1]) + Math.abs(n[1]) * 0.06, '#16161a');
+    // Its glow on the street in front of it.
+    map.lamp(p.x + n[0] * 1.5, p.z + n[1] * 1.5, { colour: p.glow ?? '#b8c8ff', reach: Math.min(8, 3 + p.w), height: 1.8, glow: 0.55 });
+  },
+
+  /** A shipping container from (x, z) to (x1, z1), corrugated, its doors at the `door` end ('x' or 'z' side), lying on the ground. */
+  container(k, t, p, y) {
+    const h = p.h ?? 2.6, c = p.colour ?? '#2a6ac8';
+    t.box('corrugated', p.x, y, p.z, p.x1, y + h, p.z1, c, { band: h / 2 });
+    const along = p.x1 - p.x > p.z1 - p.z;
+    // The doors' bars and the corner castings.
+    for (let i = 1; i <= 4; i++) {
+      if (along) k.box([p.x1 + 0.02, y + h / 2, p.z + ((p.z1 - p.z) * i) / 5], [0.04, h * 0.9, 0.05], '#5a6068', { finish: 'shiny' });
+      else k.box([p.x + ((p.x1 - p.x) * i) / 5, y + h / 2, p.z1 + 0.02], [0.05, h * 0.9, 0.04], '#5a6068', { finish: 'shiny' });
+    }
+    for (const cx of [p.x + 0.1, p.x1 - 0.1]) for (const cz of [p.z + 0.1, p.z1 - 0.1]) for (const cy of [y + 0.1, y + h - 0.1]) k.box([cx, cy, cz], [0.22, 0.2, 0.22], '#3a3d44');
+  },
+
+  /** A tent: a dome, or (`peak`) a bell tent on its pole, its guy ropes out to pegs. */
+  tent(k, t, p, y) {
+    const r = p.r ?? 1.1, c = p.colour ?? '#e07a2a';
+    if (p.peak) {
+      k.cone([p.x, y + 1.0, p.z], r, 2.0, c, { segments: 10 });
+      k.cyl([p.x, y + 1.15, p.z], 0.03, 2.3, '#8a6a42', { segments: 6 });
+    } else {
+      k.sphere([p.x, y, p.z], r, c, { scale: [1, 0.72, 1], segments: 14 });
+      k.box([p.x, y + 0.35, p.z + r * 0.92], [0.5, 0.6, 0.05], '#1c1c20');
+    }
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 4 + (i * Math.PI) / 2;
+      k.beam([p.x + Math.cos(a) * r * 0.7, y + (p.peak ? 1.0 : 0.5), p.z + Math.sin(a) * r * 0.7], [p.x + Math.cos(a) * (r + 0.5), y, p.z + Math.sin(a) * (r + 0.5)], 0.008, '#e8e4dc');
+    }
+  },
+
+  /** A market stall: a counter, four posts, a striped awning over it (see WORDS for its sign). Faces +z. */
+  stall(k, t, p, y) {
+    const w = p.w ?? 2.4, d = p.d ?? 1.2, c = p.colour ?? '#c8382c';
+    k.box([p.x, y + 0.45, p.z], [w, 0.9, d * 0.6], '#8a6a42');
+    k.box([p.x, y + 0.92, p.z], [w + 0.1, 0.05, d * 0.66], '#e8e4dc');
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.cyl([p.x + sx * (w / 2 - 0.05), y + 1.05, p.z + sz * (d / 2 - 0.05)], 0.025, 2.1, '#5a6068', { segments: 6 });
+    const n = 8;
+    for (let i = 0; i < n; i++) k.box([p.x - w / 2 + (w * (i + 0.5)) / n, y + 2.05, p.z + 0.05], [w / n + 0.01, 0.04, d + 0.3], i % 2 ? '#f4f1ea' : c, { rot: [0.22, 0, 0] });
+  },
+
+  /** A row of solar panels from x along `length`, tilted to the south, on their frames. */
+  solar(k, t, p, y) {
+    for (let s = 0; s < p.length - 0.5; s += 1.05) {
+      k.box([p.x + s + 0.5, y + 0.95, p.z], [1.0, 0.05, 1.6], '#1a2a4a', { rot: [0.45, 0, 0], finish: 'glass' });
+      k.box([p.x + s + 0.5, y + 0.92, p.z], [1.02, 0.03, 1.64], '#c8ccd2', { rot: [0.45, 0, 0], finish: 'shiny' });
+      for (const dz of [-0.5, 0.5]) k.cyl([p.x + s + 0.5, y + (0.95 - dz * 0.7) / 2, p.z + dz * 0.9], 0.03, 0.95 - dz * 0.7, '#8a9098', { segments: 6 });
+    }
+  },
+
+  /** The regulatory sandbox's toys: buckets, a spade, a castle, a little flag. */
+  sandbox(k, t, p, y) {
+    const { x, z, w, d } = p;
+    k.cyl([x + 1.2, y + 0.18, z + 1.2], [0.14, 0.18], 0.36, '#c8382c', { segments: 12 });
+    k.cyl([x + w - 1.4, y + 0.18, z + d - 1.1], [0.14, 0.18], 0.36, '#f2c230', { segments: 12 });
+    k.box([x + w - 1.0, y + 0.3, z + 1.0], [0.08, 0.6, 0.03], '#2a5aa8', { rot: [0, 0, 0.5] });
+    k.box([x + w / 2 + 1.4, y + 0.25, z + d / 2], [0.7, 0.5, 0.7], '#d8bc84');
+    for (const [dx, dz] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) k.cyl([x + w / 2 + 1.4 + dx, y + 0.65, z + d / 2 + dz], 0.12, 0.3, '#d8bc84', { segments: 10 });
+    k.cyl([x + w / 2 + 1.4, y + 1.0, z + d / 2], 0.012, 0.5, '#5a6068', { segments: 4 });
+    k.box([x + w / 2 + 1.52, y + 1.17, z + d / 2], [0.22, 0.14, 0.01], '#1a3aa0');
   },
 
   /** A freestanding sign on two posts with words on both faces, `w` by `h` tiles, facing `facing` quarter turns (0 is toward +z, 1 toward +x). */
-  placard(k, t, p, y) {
+  placard(k, t, p, y, map) {
     const w = p.w ?? 1.8, h = p.h ?? 1.1, f = ((p.facing ?? 0) % 4 + 4) % 4;
     const along = f % 2 === 0 ? [1, 0] : [0, 1];
     const top = y + 0.5 + h;
-    for (const s of [-1, 1]) k.cyl([p.x + along[0] * s * (w / 2 - 0.1), (y + top) / 2, p.z + along[1] * s * (w / 2 - 0.1)], 0.04, top - y, '#4a3a2a', { segments: 8 });
+    // Each post down to the ground under it, the board level.
+    for (const s of [-1, 1]) {
+      const px = p.x + along[0] * s * (w / 2 - 0.1), pz = p.z + along[1] * s * (w / 2 - 0.1);
+      const foot = Math.min(y, map.heightAt(px, pz) ?? y);
+      k.cyl([px, (foot + top) / 2, pz], 0.04, top - foot, '#4a3a2a', { segments: 8 });
+    }
     const ex = along[0] ? w / 2 : 0.05, ez = along[1] ? w / 2 : 0.05;
     k.slab(p.x - ex, y + 0.5, p.z - ez, p.x + ex, top, p.z + ez, '#3a3d44');
   },
@@ -455,29 +506,36 @@ const DRAW = {
 const WORDS = {
   billboard(GFX, p, y) {
     const tex = words(GFX, p.text ?? 'METRLOL\nRoll on in', {
-      w: 1024, h: 600, bg: '#f4c430', fg: '#1c1b1a', font: `400 ${p.size ?? 170}px`,
+      w: 4.95, h: 2.95, bg: '#f4c430', fg: '#1c1b1a', area: [0, 0.8],
       accent(ctx, w, h) {
         ctx.fillStyle = '#c8382c';
         ctx.fillRect(0, h * 0.8, w, h * 0.2);
+        const tag = p.tag ?? 'NEXT LEFT';
+        let size = h * 0.12;
+        ctx.font = `400 ${size}px ${FONT}`;
+        size *= Math.min(1, (w * 0.92) / ctx.measureText(tag).width);
+        ctx.font = `400 ${size}px ${FONT}`;
         ctx.fillStyle = '#f4f1ea';
-        ctx.font = '400 66px Anton, "Arial Black", Impact, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(p.tag ?? 'NEXT LEFT', w / 2, h * 0.91);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tag, w / 2, h * 0.9);
       },
     });
-    return [sign(GFX, tex, [p.x - 0.15, y + 4.5, p.z], 4.95, 2.95, -Math.PI / 2, 0.75)];
+    // Both faces: the board can be seen coming and going.
+    return [sign(GFX, tex, [p.x - 0.15, y + 4.5, p.z], 4.95, 2.95, -Math.PI / 2, 0.75), sign(GFX, tex, [p.x + 0.07, y + 4.5, p.z], 4.95, 2.95, Math.PI / 2, 0.75)];
   },
   shop(GFX, p) {
-    const tex = words(GFX, 'EURO SHOP · CLOSED (LUNCH)', { w: 1024, h: 120, bg: '#1a3aa0', fg: '#f4d020', font: '400 84px' });
-    return [sign(GFX, tex, [p.x + p.w / 2, p.h - 0.3, p.z - 0.04], p.w * 0.94, 0.42, Math.PI, 1)];
+    const tex = words(GFX, p.text ?? 'EURO SHOP · CLOSED (LUNCH)', { w: p.w * 0.94, h: 0.42, bg: p.bg ?? '#1a3aa0', fg: p.fg ?? '#f4d020', cap: 0.7 });
+    // Over the front, and again round the back.
+    return [sign(GFX, tex, [p.x + p.w / 2, p.h - 0.3, p.z - 0.04], p.w * 0.94, 0.42, Math.PI, 1), sign(GFX, tex, [p.x + p.w / 2, p.h - 0.3, p.z + p.d + 0.04], p.w * 0.94, 0.42, 0, 1)];
   },
   sign(GFX, p, y) {
-    const tex = words(GFX, p.text, { w: 256, h: 192, bg: '#f2c230', fg: '#1c1b1a', font: '400 52px' });
-    return [sign(GFX, tex, [p.x - 0.05, y + 1.15, p.z + 0.5], 0.8, 0.6, -Math.PI / 2, 0.5)];
+    const tex = words(GFX, p.text, { w: 0.8, h: 0.6, bg: '#f2c230', fg: '#1c1b1a' });
+    return [sign(GFX, tex, [p.x - 0.05, y + 1.15, p.z + 0.5], 0.8, 0.6, -Math.PI / 2, 0.5), sign(GFX, tex, [p.x + 0.05, y + 1.15, p.z + 0.5], 0.8, 0.6, Math.PI / 2, 0.5)];
   },
   placard(GFX, p, y) {
     const w = p.w ?? 1.8, h = p.h ?? 1.1, f = ((p.facing ?? 0) % 4 + 4) % 4;
-    const tex = words(GFX, p.text, { w: 512, h: Math.round(512 * h / w), bg: p.bg ?? '#f4f0e6', fg: p.fg ?? '#1c1b1a', font: `400 ${p.size ?? 64}px` });
+    const tex = words(GFX, p.text, { w, h, bg: p.bg ?? '#f4f0e6', fg: p.fg ?? '#1c1b1a' });
     const turn = f * Math.PI / 2, n = [Math.sin(turn), Math.cos(turn)];
     const at = y + 0.5 + h / 2;
     return [
@@ -486,17 +544,28 @@ const WORDS = {
     ];
   },
   canopy(GFX, p) {
-    const tex = words(GFX, 'FUEL  ·  2.99  ·  +21% VAT  ·  PLEASE ACCEPT ALL COOKIES', { w: 1536, h: 96, bg: '#1a3aa0', fg: '#f4d020', font: '400 62px' });
+    const tex = words(GFX, p.text ?? 'CHARGING  ·  €0.79/kWh  ·  +21% VAT  ·  PLEASE ACCEPT ALL COOKIES', { w: p.w * 0.96, h: 0.26, bg: '#1a3aa0', fg: '#f4d020', cap: 0.75 });
     return [sign(GFX, tex, [p.x + p.w / 2, p.h + 0.27, p.z + p.d + 0.04], p.w * 0.96, 0.26, 0, 1)];
   },
-  carwash(GFX, p) {
-    const tex = words(GFX, 'REGULATORY SANDBOX', { w: 512, h: 96, bg: '#1a3aa0', fg: '#f4d020', font: '400 56px' });
-    return [sign(GFX, tex, [p.x - 0.29, 2.35, p.z + p.d / 2], 3.2, 0.24, -Math.PI / 2, 1)];
+  stall(GFX, p, y) {
+    if (!p.text) return [];
+    const tex = words(GFX, p.text, { w: (p.w ?? 2.4) * 0.8, h: 0.4, bg: p.colour ?? '#c8382c', fg: '#fff6ee', cap: 0.7 });
+    return [sign(GFX, tex, [p.x, y + 1.55, p.z + (p.d ?? 1.2) / 2 + 0.12], (p.w ?? 2.4) * 0.8, 0.4, 0, 0.85)];
+  },
+  sandbox(GFX, p, y) {
+    const tex = words(GFX, 'REGULATORY SANDBOX', { w: 3.2, h: 0.24, bg: '#1a3aa0', fg: '#f4d020', cap: 0.75 });
+    // Over both ends of the shed.
+    return [sign(GFX, tex, [p.x - 0.29, y + 2.2, p.z + p.d / 2], 3.2, 0.24, -Math.PI / 2, 1), sign(GFX, tex, [p.x + p.w + 0.29, y + 2.2, p.z + p.d / 2], 3.2, 0.24, Math.PI / 2, 1)];
   },
   tank(GFX, p) {
-    if (p.r < 5) return [];
-    const tex = words(GFX, 'p(DOOM)', { w: 768, h: 160, bg: '#e8e4dc', fg: '#c8382c', font: '400 130px' });
+    if (!p.label) return [];
+    const tex = words(GFX, p.label, { w: 3.6, h: 0.75, bg: p.colour ?? '#e8e4dc', fg: '#c8382c', cap: 0.8 });
     return [sign(GFX, tex, [p.x + p.r * 0.71 + 0.03, p.h * 0.4, p.z + p.r * 0.71 + 0.03], 3.6, 0.75, Math.PI / 4, 0.5)];
+  },
+  screen(GFX, p, y) {
+    const f = ((p.facing ?? 0) % 4 + 4) % 4, turn = f * Math.PI / 2;
+    const tex = words(GFX, p.text, { w: p.w, h: p.h, bg: p.bg ?? '#1a1a2a', fg: p.fg ?? '#f4f1ea' });
+    return [sign(GFX, tex, [p.x + Math.sin(turn) * 0.07, y + p.h / 2, p.z + Math.cos(turn) * 0.07], p.w, p.h, turn, 1)];
   },
 };
 
@@ -562,7 +631,7 @@ export function structureLights(map) {
   const dummy = { slab() {}, box() {}, cyl() {}, cone() {}, sphere() {}, torus() {}, beam() {}, get empty() { return true; } };
   const t = { cylinder() {}, face() {}, box() {} };
   for (const p of map.props) {
-    if (!['canopy', 'billboard', 'tank', 'stack'].includes(p.type)) continue;
+    if (!['canopy', 'billboard', 'tank', 'screen'].includes(p.type)) continue;
     const y = p.y ?? map.heightAt(p.x, p.z) ?? 0;
     DRAW[p.type](dummy, t, p, y, map, dummy);
   }

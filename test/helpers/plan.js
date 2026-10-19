@@ -1,12 +1,16 @@
+import { SURFACES } from '../../src/surfaces.js';
+
 /**
  * Finding a way across the town, tile by tile, the way the spikes can go:
  * on to a neighbouring tile that is level with this one or a curb higher at
  * most, or down off one no further than `drop`; never through anything
- * solid; round tar, and the interstate, and oil and the pumpjacks' heads
- * and the flares unless there is no other way. A*, eight ways.
+ * solid or round; round tar and the sea, and the superhighway, and oil and
+ * the stamps and the vents unless there is no other way. A*, eight ways.
  */
 
 const CLIMB = 0.2;
+/** The steepest the ball rolls up from tile to tile under its own push, rising this much a tile. */
+const STEEP = 0.55;
 
 /** The heights along the edge a tile shares with its neighbour (dx, dz): mine, then theirs. */
 function edge(c, n, dx, dz) {
@@ -22,10 +26,19 @@ const top = (c) => Math.max(...c.h);
 export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
   const { cols, rows } = map;
   const R = radius + 0.06;
-  const solids = map.solids;
+  // Everything solid, and everything round as the square round it, by the tiles it covers.
+  const boxes = [...map.solids, ...map.cylinders.map((q) => ({ min: [q.x - q.r, q.y0, q.z - q.r], max: [q.x + q.r, q.y1, q.z + q.r] }))];
+  const near = Array.from({ length: cols * rows }, () => []);
+  for (const s of boxes) {
+    for (let z = Math.max(0, Math.floor(s.min[2] - R)); z <= Math.min(rows - 1, Math.floor(s.max[2] + R)); z++) {
+      for (let x = Math.max(0, Math.floor(s.min[0] - R)); x <= Math.min(cols - 1, Math.floor(s.max[0] + R)); x++) near[z * cols + x].push(s);
+    }
+  }
   /** Whether a ball at ground height `y` going from a to b would hit a solid. */
   const blocked = (ax, az, bx, bz, y) => {
-    for (const s of solids) {
+    const seen = new Set();
+    for (const k of [Math.floor(az) * cols + Math.floor(ax), Math.floor(bz) * cols + Math.floor(bx)]) for (const s of near[k] ?? []) seen.add(s);
+    for (const s of seen) {
       if (s.max[1] < y + 0.08 || s.min[1] > y + 0.75) continue;
       // The segment against the box grown by the ball's radius.
       const x0 = s.min[0] - R, x1 = s.max[0] + R, z0 = s.min[2] - R, z1 = s.max[2] + R;
@@ -47,7 +60,7 @@ export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
       const c = map.cell(x, z);
       const k = z * cols + x;
       if (!c) { cost[k] = Infinity; continue; }
-      if (c.surface === 'tar') cost[k] = Infinity;
+      if (SURFACES[c.surface]?.sinks) cost[k] = Infinity;
       else if (c.surface === 'highway') cost[k] = 30;
       else if (c.surface === 'oil' || c.surface === 'wet') cost[k] = 6;
       else if (c.surface === 'berm') cost[k] = 4;
@@ -56,17 +69,17 @@ export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
       if (slope > 0.3) cost[k] += slope * 4;
     }
   }
-  // Nowhere near a pumpjack's head: the tile under it and every tile round it.
-  for (const p of map.pumpjacks) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) cost[(p.z + j) * cols + p.x + i] = Infinity;
-  for (const f of map.flares) cost[f.z * cols + f.x] = 200;
+  // Nowhere near a stamp: the tile under it and every tile round it.
+  for (const p of map.stamps) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) cost[(p.z + j) * cols + p.x + i] = Infinity;
+  for (const f of map.flares) cost[Math.floor(f.z + 0.5) * cols + Math.floor(f.x + 0.5)] = 200;
   // Away from walls and drops: a tile next to a step it can't take costs more.
-  const near = new Float32Array(cols * rows);
+  const edgy = new Float32Array(cols * rows);
   for (let z = 1; z < rows - 1; z++) {
     for (let x = 1; x < cols - 1; x++) {
       const c = map.cell(x, z);
       for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const n = map.cell(x + dx, z + dz);
-        if (!n || Math.abs(top(n) - top(c)) > CLIMB) near[z * cols + x] += 1.5;
+        if (!n || Math.abs(top(n) - top(c)) > CLIMB) edgy[z * cols + x] += 1.5;
       }
     }
   }
@@ -79,6 +92,8 @@ export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
     const up = Math.max(theirs[0] - mine[0], theirs[1] - mine[1]);
     const down = Math.max(mine[0] - theirs[0], mine[1] - theirs[1]);
     if (up > CLIMB || down > drop) return false;
+    // Nothing steeper uphill than the push will roll it up.
+    if ((map.heightAt(x + dx + 0.5, z + dz + 0.5) - map.heightAt(x + 0.5, z + 0.5)) > STEEP) return false;
     const y = Math.max(mine[0], mine[1]);
     return !blocked(x + 0.5, z + 0.5, x + dx + 0.5, z + dz + 0.5, y);
   };
@@ -133,7 +148,7 @@ export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
           const n = (z + dz) * cols + (x + dx);
           if (x + dx < 0 || z + dz < 0 || x + dx >= cols || z + dz >= rows || closed[n] || cost[n] === Infinity) continue;
           if (!step(x, z, dx, dz)) continue;
-          const d = g[k] + Math.hypot(dx, dz) * (cost[n] + near[n]);
+          const d = g[k] + Math.hypot(dx, dz) * (cost[n] + edgy[n]);
           if (d < g[n]) {
             g[n] = d;
             from[n] = k;

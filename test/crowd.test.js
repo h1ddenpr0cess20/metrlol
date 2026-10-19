@@ -51,7 +51,7 @@ test('the two new people bake and move', () => {
 
 test('the city is full of people, none of them inside anything or on a roof', () => {
   const town = createTown();
-  assert.ok(town.foes.length >= 90, `${town.foes.length} people`);
+  assert.ok(town.foes.length >= 400, `${town.foes.length} people`);
   for (const f of town.foes) {
     assert.ok(FOES[f.kind], f.kind);
     const h = town.heightAt(f.x, f.z);
@@ -64,6 +64,9 @@ test('the city is full of people, none of them inside anything or on a roof', ()
   // Every side of the argument turns up.
   const kinds = new Set(town.foes.map((f) => f.kind));
   for (const k of ['pauser', 'doomer', 'altruist', 'rationalist', 'anarchist', 'eurocrat', 'striker', 'accelerationist', 'replyguy', 'prophet']) assert.ok(kinds.has(k), k);
+  // Everybody in the roster is out there somewhere, the bosses once each.
+  for (const k of Object.keys(FOES)) assert.ok(kinds.has(k), `nobody is a ${k}`);
+  for (const k of ['prophet', 'billionaire', 'edgecase']) assert.equal(town.foes.filter((f) => f.kind === k).length, 1, k);
 });
 
 test('fast enough, a pauser is smashed and thrown clear; the ball goes on at speed', () => {
@@ -167,7 +170,7 @@ test('the city has furniture to smash, and the signs and the statue are among it
   const run = createRun(GFX, { map: town, foes: false });
   for (const p of run.breakables) assert.ok(p.boxes.length > 0 && p.r > 0 && p.top > p.base, `${p.name} at ${p.x},${p.z}`);
   const kinds = new Set(town.breakables.map((p) => p.name));
-  for (const k of ['streetlamp', 'tree', 'bench', 'placard', 'statue', 'gaspump']) assert.ok(kinds.has(k), k);
+  for (const k of ['streetlamp', 'tree', 'bench', 'placard', 'statue', 'charger']) assert.ok(kinds.has(k), k);
   // Smashing it takes it out of the world, and a new run puts it back.
   const first = run.breakables[0];
   for (const box of first.boxes) box.solid = false;

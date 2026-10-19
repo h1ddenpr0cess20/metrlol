@@ -7,12 +7,12 @@ import { surfaceOf } from './surfaces.js';
 /**
  * The world is one big grid of tiles, each with its own four corner heights
  * and what it is made of — so a tile can be flat road, a ramp, a pitched
- * roof or a lump of the oil field, and two tiles side by side can be at
+ * roof or the side of a hill, and two tiles side by side can be at
  * different heights with a wall between them (a curb, a loading dock, the
  * side of a house).
  *
  * On top of the tiles go the things the world is furnished with: road
- * paint (`marks`), props (pumps, pumpjacks, signs, trees; `props`), and
+ * paint (`marks`), props (tanks, masts, signs, trees; `props`), and
  * the solid boxes the props stand in (`solids`). Moving things are listed
  * here too and set going elsewhere.
  */
@@ -34,10 +34,10 @@ export class TownMap {
     this.props = [];
     this.solids = [];
     this.roads = [];
-    this.pumpjacks = [];
+    this.stamps = [];
     this.flares = [];
     this.lifts = [];
-    this.drums = [];
+    this.reels = [];
     this.likes = [];
     this.gpus = [];
     this.stones = [];
@@ -108,7 +108,7 @@ export class TownMap {
     if (roof === 'flat') this.flat(x, z, w, d, h, { surface: surface ?? 'flatroof', wall, wtex });
     else {
       const across = ridge === 'x' ? (X, Z) => Math.abs((Z - z) / d * 2 - 1) : (X) => Math.abs((X - x) / w * 2 - 1);
-      this.surface(x, z, w, d, (X, Z) => h + pitch * (1 - across(X, Z)), { surface: surface ?? 'roof', wall });
+      this.surface(x, z, w, d, (X, Z) => h + pitch * (1 - across(X, Z)), { surface: surface ?? 'roof', wall, wtex });
     }
     if (facade) {
       // Its walls drawn as a building's face, storey by storey from `base`; a door in the middle of side `door`.
@@ -215,20 +215,24 @@ export class TownMap {
   /**
    * A loop the traffic drives round: tile-centre points in order, `cars`
    * spaced evenly round it at `speed` tiles a second. `kind` is what
-   * drives it: 'car', 'truck' or 'tanker'.
+   * drives it: 'car' or 'truck'.
    */
   road(points, { cars = 3, speed = 4, kind = 'car', brakes = true, open = false } = {}) {
     this.roads.push({ points, cars, speed, kind, brakes, open });
     return this;
   }
 
-  /** A pumpjack nodding over the tile at (x, z): the head comes down on it every `period` seconds. */
-  pumpjack(x, z, { facing = 'x', period = 3.2, phase = 0, lift = 1.8 } = {}) {
-    this.pumpjacks.push({ x, z, facing, period, phase, lift });
+  /**
+   * A rubber stamp over the tile at (x, z), its gantry's legs either side
+   * of a lane running along `facing` ('x' or 'z'): it comes down on the
+   * tile every `period` seconds.
+   */
+  stamp(x, z, { facing = 'x', period = 3.2, phase = 0, lift = 1.8 } = {}) {
+    this.stamps.push({ x, z, facing, period, phase, lift });
     return this;
   }
 
-  /** A gas vent in the ground: it flares up for a while every `period` seconds. */
+  /** A vent in the ground: a hot take comes up out of it for a while every `period` seconds. */
   flare(x, z, { period = 3, phase = 0, burn = 0.35 } = {}) {
     this.flares.push({ x, z, period, phase, burn });
     return this;
@@ -240,9 +244,9 @@ export class TownMap {
     return this;
   }
 
-  /** An oil drum that rolls after the ball when it comes near. */
-  drum(x, z, { range = 7 } = {}) {
-    this.drums.push({ x: x + 0.5, z: z + 0.5, range });
+  /** A cable reel that rolls after the ball when it comes near. */
+  reel(x, z, { range = 7 } = {}) {
+    this.reels.push({ x: x + 0.5, z: z + 0.5, range });
     return this;
   }
 
@@ -400,7 +404,7 @@ export const AMBIENT = Object.freeze([0.3, 0.32, 0.46]);
 /**
  * The light baked into the ground and the walls: the night everywhere, and
  * a pool round every lamp, warm under the sodium lamps, white under the
- * canopy, orange round the flares.
+ * canopy and the screens.
  */
 export function bakeLight(map) {
   const lamps = map.lamps.map((l) => {

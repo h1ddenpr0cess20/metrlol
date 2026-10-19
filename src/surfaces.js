@@ -7,7 +7,7 @@
  *   back; an oil slick hardly does.
  * - `grip`: how much of the push the ball gets on it. On oil it is
  *   running in place.
- * - `sinks`: tar. Roll in and the ball goes under.
+ * - `sinks`: tar, and the sea. Roll in and the ball goes under.
  * - `shine`: how it reflects (`wet`, `oil`, `tar`), if it does.
  * - `map`: its colour on the map in the corner.
  */
@@ -33,6 +33,9 @@ export const SURFACES = Object.freeze({
   tar: { tex: 'asphalt', top: '#0e0e10', wtex: 'cliff', wall: '#1a1a1e', drag: 6, grip: 0.1, sinks: true, shine: 'tar', map: '#060608' },
   pool: { tex: 'pooltile', top: '#8ccbe2', wtex: 'pooltile', wall: '#cfe8f0', drag: 0.45, grip: 1, map: '#7cc0dc' },
   plank: { tex: 'planks', top: '#9a7448', wtex: 'timber', wall: '#6a4a2c', drag: 0.6, grip: 1, map: '#8a6440' },
+  marble: { tex: 'marble', top: '#e2ddd2', wtex: 'stone', wall: '#c8c2b4', drag: 0.5, grip: 1, map: '#cfcac0' },
+  terracotta: { tex: 'terracotta', top: '#c8885a', wtex: 'stucco', wall: '#d8c4a8', drag: 0.55, grip: 1, map: '#b07850' },
+  water: { tex: 'asphalt', top: '#1c4a5c', wtex: 'cliff', wall: '#3a3428', drag: 6, grip: 0.1, sinks: true, shine: 'wet', map: '#1e4e66' },
 });
 
 export const surfaceOf = (cell) => SURFACES[cell?.surface] ?? SURFACES.road;

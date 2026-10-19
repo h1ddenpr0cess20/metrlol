@@ -15,12 +15,12 @@ import { groundAxes } from './view.js';
  * spikes get knocked off, what blunts it, where it comes back to, what it
  * smashes and picks up. The game draws and plays it; the tests drive it.
  *
- * The ball has 100 spikes to start with. Hard landings, cars, drums, the
- * steam vents and the people it fails to smash take them off (half as many
- * as they would, the ball being durable); a whetstone
- * sharpens them back to 100 and is where the ball comes back to after it is
- * blunted. A token pump's head coming down on it blunts it outright. Tar
- * swallows it, and it's put back on the last firm ground.
+ * The ball has 100 spikes to start with. Hard landings, cars, cable reels,
+ * the hot takes coming up out of the vents and the people it fails to smash
+ * take them off (half as many as they would, the ball being durable); a
+ * whetstone sharpens them back to 100 and is where the ball comes back to
+ * after it is blunted. A rubber stamp coming down on it blunts it outright.
+ * Tar and the sea swallow it, and it's put back on the last firm ground.
  *
  * People are smashed by speed (`smash.js`); a smash is worth cred, and
  * smashes one after another build a combo (up to ×5) that multiplies it.
@@ -40,7 +40,7 @@ export const SPIKES = 100;
 export const ACCEL = Object.freeze({ push: 1.9, top: 1.75, drain: 0.34, refill: 0.2, resume: 0.25 });
 
 /** How hard a landing has to be to hurt, and how much each kind of knock costs. */
-export const HURT = Object.freeze({ landing: 9.5, car: 2.6, drum: 3.2, flare: 34, foe: 1.6 });
+export const HURT = Object.freeze({ landing: 9.5, car: 2.6, reel: 3.2, flare: 34, foe: 1.6 });
 
 /** How much of any knock actually costs spikes: the ball is a lump of forged steel, and it is built to last. */
 export const DURABILITY = 0.5;
@@ -78,7 +78,7 @@ export function createRun(GFX, { ball = createBall({ r: RADIUS }), map = createT
     checkpoint: stones.find((p) => p.name === 'Home') ?? null,
     district: null,
     sinking: 0,
-    cooldown: { car: 0, flare: 0, drum: 0 },
+    cooldown: { car: 0, flare: 0, reel: 0 },
     accel: 1, winded: false,
   };
   hazards.place(0);
@@ -117,7 +117,7 @@ export function under(run) {
 
 /**
  * One step of everything. `push` is along the ground ([x, z]). While
- * `live`, the rules apply and the drums and the crowd come at the ball; while
+ * `live`, the rules apply and the reels and the crowd come at the ball; while
  * `moving` is false the ball stays where it is. Returns what happened: how
  * hard it hit anything, the knocks and what they cost, who it smashed, what
  * it picked up, and `outcome` — null, or 'blunted', 'squashed' or 'sunk'.
@@ -196,9 +196,9 @@ export function stepRun(run, push, dt = STEP, { live = true, moving = true, boos
     run.cooldown.car = 0.5;
     if (!honks.includes(car)) honks.push(car);
   }
-  if (events.bump > HURT.drum && run.cooldown.drum <= 0) {
-    hurt((events.bump - HURT.drum) * 6 + 4, 'drum');
-    run.cooldown.drum = 0.4;
+  if (events.bump > HURT.reel && run.cooldown.reel <= 0) {
+    hurt((events.bump - HURT.reel) * 6 + 4, 'reel');
+    run.cooldown.reel = 0.4;
   }
   if (events.burned && run.cooldown.flare <= 0) {
     hurt(HURT.flare, 'flare');

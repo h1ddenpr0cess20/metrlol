@@ -2,10 +2,10 @@
  * An autopilot for the town: it rolls the ball from place to place with
  * the same push the controls give — finding its own way across the map
  * (`plan.js`) where it can, following set waypoints where the way is
- * tricky (along the pipeline, over the plank, on a lift) — and waits where
- * a waypoint says to: for a lift, for a pumpjack's head to go up, for a
- * flare to die down, for a gap in the traffic. It shies away from drums
- * and won't roll out in front of a moving car.
+ * tricky (along the pipe, over the plank, on a lift) — and waits where a
+ * waypoint says to: for a lift, for a stamp to go up, for a vent to go
+ * quiet, for a gap in the traffic. It shies away from reels and won't roll
+ * out in front of a moving car.
  *
  * If it can find every golden GPU without being blunted, a person
  * can. The tests hold the town to that.
@@ -26,14 +26,14 @@ export const liftAtEnd = (i, end) => (run) => {
   return end === 0 ? s === 0 && u < l.pause * 0.4 : s === 1 && u > 0.5 && u < 0.5 + l.pause * 0.4;
 };
 
-/** Pumpjack `i`'s head on its way up and high enough to go under, with a while before it comes down. */
-export const headUp = (i) => (run) => {
-  const p = run.hazards.pumpjacks[i];
+/** Stamp `i` on its way up and high enough to go under, with a while before it comes down. */
+export const stampUp = (i) => (run) => {
+  const p = run.hazards.stamps[i];
   const u = cycle(run.time, p.period, p.phase);
   return u > 0.25 && u < 0.42 && nodAt(run.time, p.period, p.phase) > 0.55;
 };
 
-/** Every flare within `near` of (x, z) out, and staying out for at least `for` seconds. */
+/** Every vent within `near` of (x, z) quiet, and staying quiet for at least `hold` seconds. */
 export const flaresOut = (x, z, near = 2.2, hold = 0.9) => (run) => run.hazards.flares.every((f) => {
   if (Math.hypot(f.x + 0.5 - x, f.z + 0.5 - z) > near) return true;
   for (let t = 0; t <= hold; t += 0.05) if (flareAt(run.time + t, f.period, f.phase, f.burn) > 0) return false;
@@ -53,7 +53,7 @@ export const laneClear = (xs, z, gap = 13) => (run) => run.traffic.cars.every((c
  * optionally `{ expect }`, the golden GPU it should find. Returns how it
  * went: the golden GPUs found, the spikes lost, the pops and when.
  */
-export function drive(tour, { limit = 2400, log = false } = {}) {
+export function drive(tour, { limit = 4800, log = false } = {}) {
   const run = createRun(GFX, { foes: false });
   const planner = createPlanner(run.map);
   const b = run.ball;
@@ -61,6 +61,7 @@ export function drive(tour, { limit = 2400, log = false } = {}) {
   const hurts = [];
   const found = [];
   let t = 0, down = 0, legIndex = 0, wp = 0, path = null, lastLost = null;
+  let backoff = 0;
   let best = Infinity, sinceBest = 0;
 
   const startLeg = () => {
@@ -144,12 +145,22 @@ export function drive(tour, { limit = 2400, log = false } = {}) {
     }
     const stop = waiting || o.stop;
     // Close to a point it has to pass through, slow enough to turn inside it rather than circle it.
-    const want = stop ? Math.min(speed, d * 2.5) : d < 1.2 ? Math.min(speed, Math.max(1.8, d * 3.2)) : speed;
+    let want = stop ? Math.min(speed, d * 2.5) : d < 1.2 ? Math.min(speed, Math.max(1.8, d * 3.2)) : speed;
+    // A kerb just ahead: at a crawl the ball can't get up one, so take it at a trot, backing off for a run at it if it has to.
+    if (!stop && d > 1e-3) {
+      const rise = (k) => (run.map.heightAt(b.x + (dx / d) * k, b.z + (dz / d) * k) ?? -Infinity) - (run.map.heightAt(b.x, b.z) ?? 0);
+      const up = rise(0.7);
+      if (up > 0.08 && up < 0.3) {
+        want = Math.max(want, 3.5);
+        if (backoff <= 0 && b.vx * dx / d + b.vz * dz / d < 1 && rise(0.45) > 0.08) backoff = 0.45;
+      }
+    }
+    if (backoff > 0) { backoff -= STEP; want = -2.5; }
     let vx = d > 1e-3 ? (dx / d) * want : 0;
     let vz = d > 1e-3 ? (dz / d) * want : 0;
 
-    // Out of the drums' way.
-    for (const s of run.hazards.drums) {
+    // Out of the reels' way.
+    for (const s of run.hazards.reels) {
       const sx = b.x - s.ball.x, sz = b.z - s.ball.z, sd = Math.hypot(sx, sz);
       if (s.gone <= 0 && sd < 1.8 && sd > 1e-3) {
         const k = (1.8 - sd) * 3;

@@ -2,7 +2,7 @@
   "name": "metrlol",
   "version": "0.1.0",
   "private": true,
-  "description": "Metrlol. A spiked steel ball loose in an open city of takes: the doomers, the altruists, the commune, the Eurocrats and the reply guys, smashed by speed, and 22 golden GPUs to hoard.",
+  "description": "Metrlol. A spiked steel ball loose in an open city of takes: the doomers, the altruists, the commune, the Eurocrats and the reply guys, smashed by speed, and 42 golden GPUs to hoard.",
   "type": "module",
   "engines": {
     "node": ">=22.12"

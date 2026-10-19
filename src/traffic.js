@@ -2,7 +2,7 @@ import { model } from './models/library.js';
 import { materialsOf } from './sculpt/bake.js';
 
 /**
- * The traffic: cars, trucks and tankers driving round the roads of the
+ * The traffic: cars and trucks driving round the roads of the
  * map (`map.roads`). Each road is a loop (or, on the interstate, a line
  * the cars come in at one end of and leave by the other), its corners
  * rounded off, and the cars on it spaced evenly round it to start.
@@ -17,7 +17,6 @@ import { materialsOf } from './sculpt/bake.js';
 export const KINDS = Object.freeze({
   car: { length: 1.9, width: 0.95, height: 0.85, models: ['sedan', 'hatchback', 'pickup'] },
   truck: { length: 2.7, width: 1.1, height: 1.4, models: ['boxtruck'] },
-  tanker: { length: 4.2, width: 1.15, height: 1.5, models: ['tanker'] },
 });
 
 const PAINT = ['#c8382c', '#2c6ec8', '#e8e2d6', '#f2c230', '#3a8a4a', '#1c1b1f', '#8a8f9a', '#e07a2a', '#6a3a8a', '#4ab0c8'];
@@ -84,7 +83,7 @@ export function createTraffic(GFX, map, world) {
   for (const [ri, road] of map.roads.entries()) {
     const path = roundedPath(road.points, { open: road.open });
     for (let i = 0; i < road.cars; i++) {
-      const kind = road.kind === 'truck' && i % 2 && !road.open ? 'tanker' : road.kind;
+      const kind = road.kind;
       const paint = PAINT[(ri * 3 + i * 7) % PAINT.length];
       const which = KINDS[kind].models[(ri + i) % KINDS[kind].models.length];
       const { geometry, def } = model(GFX, which);

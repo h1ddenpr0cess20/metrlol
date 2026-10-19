@@ -11,11 +11,22 @@ import { closingSpeed, resolveImpact } from './smash.js';
  * costs the ball some of its spikes.
  *
  * Only those near the ball are simulated. Everyone else stands where they
- * were, in the pose they were in.
+ * were, in the pose they were in. Nobody is there at all until their model
+ * is baked (`foes.js`): not drawn, not in the way. And only those in view are
+ * drawn and posed; the rest are taken out of the scene.
  */
 
 /** Further than this from the ball, a foe stands still and is not posed. */
 const SLEEP = 24;
+
+/** Further than this from what the camera looks at, a foe isn't drawn. */
+const DRAW = 48;
+
+/** How many foes' meshes may be made in a frame, as they first come into view. */
+const BUILDS = 2;
+
+/** Further than these from what the camera looks at, a foe is posed every second frame, and every third. */
+const POSE_HALF = 10, POSE_THIRD = 18;
 
 /** How near the ball has to come for a foe to notice it, if the map doesn't say. */
 const NOTICE = 6.5;
@@ -31,13 +42,14 @@ export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
   group.name = 'crowd';
   const axis = new GFX.Vector3();
   const spinQ = new GFX.Quaternion();
+  const sphere = new GFX.Sphere();
+  let frame = 0;
 
   const foes = (enabled ? map.foes : []).map((m, i) => {
     const stats = FOES[m.kind];
     if (!stats) throw new Error(`${map.name}: no such foe as ${m.kind}`);
     const look = createFoeMesh(GFX, m.kind);
     look.group.rotation.y = m.facing ?? 0;
-    group.add(look.group);
     const ground = map.heightAt(m.x, m.z) ?? 0;
     const ball = createBall({ x: m.x, y: ground + stats.radius, z: m.z, r: stats.radius, mass: stats.boss ? 50 : 2.5 });
     ball.grounded = true;
@@ -100,7 +112,7 @@ export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
     step(dt, time, ball) {
       const events = [];
       for (const f of foes) {
-        if (f.gone) continue;
+        if (f.gone || !f.look.ready) continue;
         f.guard = Math.max(0, f.guard - dt);
 
         // Thrown clear: a fall through the air, then gone.
@@ -180,27 +192,45 @@ export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
       return events;
     },
 
-    /** Meshes to match, once a frame. */
-    sync(dt, time) {
+    /**
+     * Meshes to match, once a frame. `view` ({ at, frustum }) is what the
+     * camera looks at and sees; without it, everyone is in view.
+     */
+    sync(dt, time, view = null) {
+      let builds = BUILDS;
+      frame++;
       for (const f of foes) {
-        f.look.group.visible = !f.gone;
-        if (f.gone) continue;
         const b = f.ball;
-        if (f.flung) {
-          const k = f.flung;
-          f.look.group.position.set(k.x, k.y, k.z);
+        const k = f.flung;
+        const x = k ? k.x : b.x, y = k ? k.y : b.y - b.r, z = k ? k.z : b.z;
+        let shown = !f.gone && f.look.ready;
+        const far = view ? Math.hypot(x - view.at.x, z - view.at.z) : 0;
+        if (shown && view) {
+          sphere.center.set(x, y + b.r, z);
+          sphere.radius = b.r * 2.5 + 1.5;
+          shown = far < DRAW && view.frustum.intersectsSphere(sphere);
+        }
+        if (shown && !f.look.built) shown = builds-- > 0 && f.look.build();
+        if (shown !== (f.look.group.parent === group)) {
+          if (shown) group.add(f.look.group); else group.remove(f.look.group);
+        }
+        if (!shown) continue;
+        if (k) {
+          f.look.group.position.set(x, y, z);
           axis.set(k.axis[0], 0, k.axis[1]);
           spinQ.setFromAxisAngle(axis, Math.min(Math.PI * 1.6, k.t * k.rate));
           f.look.group.quaternion.copy(spinQ);
           f.look.animate(time + f.i * 1.37, false, { down: true });
           continue;
         }
-        f.look.group.position.set(b.x, b.y - b.r, b.z);
+        f.look.group.position.set(x, y, z);
         f.look.group.quaternion.set(0, 0, 0, 1);
         let d = f.heading - f.look.body.rotation.y;
         d = Math.atan2(Math.sin(d), Math.cos(d));
         f.look.body.rotation.y += d * Math.min(1, dt * 8);
-        if (f.awake || !f.posed) {
+        // Further off, the poses come less often: the clips run on the clock all the same.
+        const every = far < POSE_HALF ? 1 : far < POSE_THIRD ? 2 : 3;
+        if (!f.posed || (f.awake && (frame + f.i) % every === 0)) {
           f.posed = true;
           f.look.animate(time + f.i * 1.37, f.moving, { chasing: f.chasing, striking: f.striking });
         }

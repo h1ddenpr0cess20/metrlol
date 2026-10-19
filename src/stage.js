@@ -180,10 +180,23 @@ function paintRoom(width = 1024) {
   return c;
 }
 
+/**
+ * How sharp the picture is drawn, as a multiple of CSS pixels: as sharp as
+ * the screen at most (2 on a desktop, 1.5 on a phone, where every pixel is
+ * shaded by a small GPU), and down to `least` if the frames can't keep up
+ * (`stage.pace`).
+ */
+export const SHARPNESS = Object.freeze({ desktop: 2, phone: 1.5, least: 1 });
+
+/** A phone or a tablet: a coarse pointer and no fine one. */
+const isPhone = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+
 export async function createStage(host) {
   const preference = new URLSearchParams(globalThis.location?.search ?? '').get('renderer');
   const renderer = await createRenderer(preference);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const phone = isPhone();
+  let sharpness = Math.min(window.devicePixelRatio || 1, phone ? SHARPNESS.phone : SHARPNESS.desktop);
+  renderer.setPixelRatio(sharpness);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = GFX.PCFShadowMap;
   host.appendChild(renderer.domElement);
@@ -210,7 +223,7 @@ export async function createStage(host) {
   scene.add(hemi);
   const key = new GFX.DirectionalLight(0xb8c6ff, 0.75);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(phone ? 1024 : 2048, phone ? 1024 : 2048);
   key.shadow.bias = -0.0003;
   key.shadow.normalBias = 0.02;
   // The shadows cover what's in view: further out, a wider square.
@@ -270,9 +283,11 @@ export async function createStage(host) {
 
   const direction = new GFX.Vector3();
 
+  // The size of the view, kept from the last resize: reading it every frame, after the HUD has changed, would lay the page out again each time.
+  let w = 1, h = 1;
+
   /** Point the camera and the lights at `stage.target`, from where the view is; called every frame. */
   stage.look = () => {
-    const w = host.clientWidth || 1, h = host.clientHeight || 1;
     camera.aspect = w / h;
     // An upright phone sees as much course across as a wide screen does.
     camera.fov = LENS.fov * Math.max(1, Math.min(1.75, 0.8 * h / w));
@@ -288,9 +303,56 @@ export async function createStage(host) {
     lantern.position.set(stage.focus.x + 0.6, stage.focus.y + 3.5, stage.focus.z + 0.6);
   };
 
-  const fit = () => renderer.setSize(host.clientWidth || 1, host.clientHeight || 1);
+  const fit = () => {
+    w = host.clientWidth || 1; h = host.clientHeight || 1;
+    renderer.setSize(w, h);
+  };
   fit();
   new ResizeObserver(fit).observe(host);
+
+  /**
+   * Called every frame with how long the last one took: when they come
+   * slower than 45 a second for a while, the picture is drawn less sharp,
+   * a step at a time, and when they come at 55 or more, sharper again, but
+   * never back up to a sharpness it has had to come down from.
+   */
+  let top = sharpness, spent = 0, frames = 0, quick = 0, settle = 3;
+  stage.pace = (dt) => {
+    if (settle > 0) { settle -= dt; return; }
+    spent += dt; frames++;
+    if (spent < 1) return;
+    const average = spent / frames;
+    spent = 0; frames = 0;
+    let next = sharpness;
+    if (average > 1 / 45) {
+      quick = 0;
+      if (sharpness > SHARPNESS.least) { top = sharpness - 0.125; next = Math.max(SHARPNESS.least, sharpness - 0.25); }
+    } else if (average < 1 / 55 && ++quick >= 3) {
+      quick = 0;
+      next = Math.min(top, sharpness + 0.125);
+    }
+    if (next !== sharpness) { sharpness = next; renderer.setPixelRatio(sharpness); }
+  };
+
+  /**
+   * Draws each of `meshes` once, too small to see, so every shader they
+   * need is compiled now, not in the middle of play the first time one comes
+   * into view.
+   */
+  stage.warm = (meshes) => {
+    const group = new GFX.Group();
+    for (const mesh of meshes) {
+      mesh.frustumCulled = false;
+      mesh.castShadow = mesh.receiveShadow = true;
+      mesh.scale.setScalar(1e-6);
+      group.add(mesh);
+    }
+    group.position.copy(stage.target);
+    scene.add(group);
+    stage.look();
+    renderer.render(scene, camera);
+    scene.remove(group);
+  };
 
   stage.render = () => renderer.render(scene, camera);
   return stage;

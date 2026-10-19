@@ -59,6 +59,14 @@ export function createEffects(GFX, scene) {
   };
 
   return {
+    /** One of each kind of bit, to be drawn once before any flies (`stage.warm`). */
+    samples() {
+      return [
+        new GFX.Mesh(shard, plastic('#aab2c2')), new GFX.Mesh(bubbles, tarMaterial), new GFX.Mesh(spark, sparkMaterial),
+        new GFX.Mesh(chaff, chaffMaterial), ...confettiColours.map((c) => new GFX.Mesh(paper, c)),
+      ];
+    },
+
     setCourse(c) {
       course = c;
       for (const b of bits) group.remove(b.mesh);

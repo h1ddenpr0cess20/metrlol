@@ -11,8 +11,9 @@ import { TownMap } from './map.js';
  *
  *   Portland Heights  north-west, the suburbs, and home: co-op houses, the
  *                 drained pool that is now the community garden, a tiny house
- *                 village, the consensus maze, a skate park, the commune, the
- *                 food co-op with its roof you can get up on.
+ *                 village, the consensus maze, the food co-op with its roof
+ *                 you can get up on and the commune behind it, and the skate
+ *                 park, four blocks of it (`skatePark`).
  *   The Alignment District  north, the middle: the Longterm Institute and
  *                 the alley behind it, the group house's car park up to its
  *                 roof, the slippery slope, the doom clock, the plaza where
@@ -245,11 +246,11 @@ function scatter(c, name, x, z, w, d, n, { seed = 1, scale = [0.9, 1.2], surface
  * has streets of its own.
  */
 const DOWN = [
-  [6, 6, 222], [30, 6, 88], [53, 6, 88], [76, 6, 168], [103, 6, 168], [130, 6, 168], [156, 6, 168], [226, 6, 245],
+  [6, 6, 222], [30, 6, 88], [53, 6, 36], [76, 6, 168], [103, 6, 168], [130, 6, 168], [156, 6, 168], [226, 6, 245],
   [62, 164, 222], [120, 164, 245], [176, 164, 200],
 ];
 const ACROSS = [
-  [6, 6, 230], [32, 6, 160], [58, 6, 160], [84, 6, 230], [164, 6, 230],
+  [6, 6, 230], [32, 6, 160], [58, 6, 34], [58, 76, 160], [84, 6, 230], [164, 6, 230],
   [110, 76, 160], [136, 76, 160], [124, 156, 230],
   [192, 6, 124], [218, 6, 124], [196, 120, 230], [241, 120, 230],
 ];
@@ -364,26 +365,7 @@ function portlandHeights(c) {
   c.likeLine(15.4, 52.5, 24.6, 52.5, 5);
   placard(c, 15, 37.3, 'CONSENSUS MAZE\nSTILL VOTING ON\nTHE EXIT', { facing: 2, size: 48 });
 
-  // The skate park: murals on the quarter pipe, a funbox, a rail.
-  block(c, 34, 36, 19, 22, 'concrete');
-  c.surface(48, 38, 4, 18, (X) => CURB + 1.75 * ((X - 48) / 4) ** 2, { surface: 'concrete' });
-  c.flat(38, 43, 3, 5, CURB + 0.8, { surface: 'concrete' });
-  c.slope(35, 43, 3, 5, CURB, CURB + 0.8, 'x', { surface: 'concrete' });
-  c.slope(38, 48, 3, 3, CURB + 0.8, CURB, 'z', { surface: 'concrete' });
-  c.slope(38, 40, 3, 3, CURB, CURB + 0.8, 'z', { surface: 'concrete' });
-  c.gpu('Up the quarter pipe (mural side)', 51.5, 47, { y: CURB + 1.75 * (3.5 / 4) ** 2 });
-  c.likeLine(39.5, 44, 39.5, 47, 3);
-  c.prop('rail', 41, 53, { length: 5 });
-  placard(c, 44, 37.3, 'NO GODS\nNO MASTERS\nNO HELMETS', { facing: 2, ...DARK });
-
-  // The commune: the long house, the allotments, the compost heap.
-  block(c, 57, 36, 19, 22, 'lawn');
-  c.block(59, 38, 14, 6, CURB + 2.2, { roof: 'pitched', ridge: 'x', wall: '#d8b8c8', pitch: 1.2, facade: 'house', base: CURB, door: 's', lit: 0.7 });
-  c.paint(59, 47, 10, 9, 'dirt');
-  for (const z of [48.5, 51.5, 54.5]) for (let x = 59.8; x < 68.5; x += 1.5) c.place('shrub', x, z, { scale: 0.6, angle: x * z });
-  c.surface(70, 48, 5, 6, (X, Z) => CURB + 0.9 * smooth(1 - Math.hypot(X - 72.5, Z - 51) / 3), { surface: 'dirt' });
-  c.likeLine(60, 46, 68, 46, 5);
-  placard(c, 66, 45.2, 'THE COMMUNE\nMEETING ABOUT\nTHE MEETING', { facing: 0, size: 50 });
+  skatePark(c);
 
   // The food co-op, with a loading ramp up its side to the roof.
   block(c, 10, 62, 20, 22, 'concrete');
@@ -393,28 +375,89 @@ function portlandHeights(c) {
   c.flat(23, 72, 2, 1, CURB + 2.4, { surface: 'concrete' });
   wall(c, 24.9, 65, 25.1, 73, CURB, CURB + 3, '#bdb8ab', 'matte', 'block');
   c.gpu('On the food co-op roof', 16.5, 67.5, { y: CURB + 2.4 });
-  for (const [x, z, col, m] of [[14, 78, '#3a8a4a', 'hatchback'], [18, 78, '#e8e2d6', 'pickup'], [26, 80, '#c8382c', 'sedan']]) c.place(m, x, z, { paint: col, angle: Math.PI / 2 });
-  for (let x = 12.5; x < 28; x += 4) c.mark(x, 76, 0.12, 4);
   c.likeLine(12, 74.5, 22, 74.5, 5);
 
-  // Portland Park: the pond, the trees, the benches.
-  block(c, 34, 62, 19, 22, 'lawn');
-  bowl(c, 37, 65, 9, 7, CURB, 0.6, 'pool', 0.4);
-  scatter(c, 'tree', 35, 63, 17, 20, 9, { seed: 11 });
-  c.place('bench', 43.5, 75, { turn: 2 }).place('bench', 48, 79).place('bin', 45.6, 75);
-  c.likeLine(36, 73, 50, 73, 7);
-
-  // Houses.
-  block(c, 57, 62, 19, 22);
-  house(c, 59, 64, 6, 5, walls[6]);
-  house(c, 68, 64, 6, 5, walls[7]);
-  house(c, 59, 76, 6, 5, walls[0], { door: 's' });
-  house(c, 68, 76, 6, 5, walls[2], { door: 's' });
-  c.place('tree', 66, 72, { scale: 1.1 });
-  c.likeLine(58.5, 72, 74.5, 72, 6);
-  placard(c, 60, 72.6, 'HATE HAS\nNO HOME HERE\n(NOR DO WE)', { facing: 0, size: 48 });
+  // Behind it, the commune: the long house and the allotments.
+  c.block(12, 76, 12, 5, CURB + 2.2, { roof: 'pitched', ridge: 'x', wall: '#d8b8c8', pitch: 1.2, facade: 'house', base: CURB, door: 'n', lit: 0.7 });
+  c.paint(25, 75, 4, 7, 'dirt');
+  for (const z of [76, 78.5, 81]) for (const x of [25.7, 27.3]) c.place('shrub', x, z, { scale: 0.6, angle: x * z });
+  placard(c, 27, 74.3, 'THE COMMUNE\nMEETING ABOUT\nTHE MEETING', { facing: 0, size: 50 });
 
   for (let z = 12; z < 82; z += 7) c.place('pine', 3.5, z + 0.5, { scale: 1.1, angle: z });
+}
+
+/**
+ * The skate park: four blocks of it, the streets between them closed. The
+ * bowl, deep at one end and shallow enough at the other to get out of; the
+ * wooden half pipe; the plaza with its stair set, handrails and bank; the
+ * pyramid; ledges, manual pads, kickers and a flat rail; the pump track
+ * round the lawn; the quarter pipe with the murals on it; the skate shop.
+ */
+const SKATE = { x: 34, z: 36, w: 42, d: 48 };
+
+function skatePark(c) {
+  block(c, SKATE.x, SKATE.z, SKATE.w, SKATE.d, 'concrete');
+  const concrete = { surface: 'concrete' };
+
+  // The bowl: two round lobes run together, the deep end and the shallow end, in pool tiles.
+  const lobes = [{ x: 42, z: 44.5, r: 6, depth: 2.1 }, { x: 49.5, z: 45.5, r: 4.5, depth: 1.2 }];
+  c.surface(36, 38, 18, 13, (X, Z) => CURB - Math.max(...lobes.map((l) => {
+    const t = Math.hypot(X - l.x, Z - l.z) / l.r;
+    return l.depth * (1 - smooth((t - 0.35) / 0.65));
+  })), { surface: 'pool' });
+
+  // The half pipe: a deck each end, the transitions, the flat bottom between, in plywood.
+  const HP = CURB + 1.8;
+  c.surface(56, 38, 18, 9, (X) => {
+    if (X <= 57 || X >= 73) return HP;
+    if (X < 61) return CURB + 1.8 * ((61 - X) / 4) ** 2;
+    if (X > 69) return CURB + 1.8 * ((X - 69) / 4) ** 2;
+    return CURB;
+  }, { surface: 'plank', wall: '#8a6a42' });
+
+  // The plaza: up the bank, along the top, down the stair set, the handrails beside it.
+  const P = CURB + 1.0;
+  c.flat(36, 53, 11, 5, P, concrete);
+  for (let k = 0; k < 3; k++) c.flat(36, 58 + k, 11, 1, P - 0.25 * (k + 1), concrete);
+  c.slope(47, 53, 3, 8, P, CURB, 'x', concrete);
+  for (const x of [38.5, 44.5]) c.prop('handrail', x, 57.8, { y0: P + 0.85, x1: x, z1: 61.4, y1: CURB + 0.85 });
+
+  // The pyramid.
+  c.surface(51, 53, 11, 11, (X, Z) => CURB + 0.9 * Math.min(1, Math.max(0, (5.5 - Math.max(Math.abs(X - 56.5), Math.abs(Z - 58.5))) / 3.5)), concrete);
+
+  // Ledges, manual pads, kickers, a flat rail.
+  c.block(64, 50, 10, 1, CURB + 0.45, { surface: 'concrete', wall: '#8a867e', wtex: 'block' });
+  c.block(65, 54, 4, 3, CURB + 0.3, { surface: 'concrete', wall: '#8a867e', wtex: 'block' });
+  c.block(70, 54, 4, 3, CURB + 0.3, { surface: 'concrete', wall: '#8a867e', wtex: 'block' });
+  c.slope(65, 59, 2, 3, CURB, CURB + 0.6, 'x', concrete);
+  c.slope(72, 59, 2, 3, CURB + 0.6, CURB, 'x', concrete);
+  c.prop('rail', 65.5, 63.5, { length: 7 });
+  c.solid(65.8, CURB, 63.45, 72.2, CURB + 0.5, 63.55);
+
+  // The pump track: rollers down the straights, the corners banked, a lawn in the middle.
+  c.surface(36, 67, 20, 14, (X, Z) => {
+    const top = Z <= 69, bottom = Z >= 79, left = X <= 38, right = X >= 54;
+    if ((top || bottom) && !left && !right) return CURB + 0.4 * Math.sin((Math.PI * (X - 38)) / 4) ** 2;
+    if ((left || right) && !top && !bottom) return CURB + 0.4 * Math.sin((Math.PI * (Z - 69)) / 2.5) ** 2;
+    if ((top || bottom) && (left || right)) return CURB + 0.6 * ((left ? 38 - X : X - 54) / 2) * ((top ? 69 - Z : Z - 79) / 2);
+    return CURB;
+  }, concrete);
+  c.paint(38, 69, 16, 10, 'lawn');
+
+  // The quarter pipe, murals on it, and a golden GPU near the top for anyone who takes a run at it.
+  c.surface(70, 66, 4, 16, (X) => CURB + 1.75 * ((X - 70) / 4) ** 2, concrete);
+  c.gpu('Up the quarter pipe (mural side)', 73.5, 74, { y: CURB + 1.75 * (3.5 / 4) ** 2 });
+
+  // The skate shop.
+  c.block(58, 77, 9, 5, CURB + 2.6, { wall: '#2a2a30', facade: 'shop', base: CURB, door: 'n', lit: 1 });
+  c.prop('shop', 58, 77, { w: 9, d: 5, h: CURB + 2.6, text: 'SKATE SHOP · DECKS · WAX · NO AI', bg: '#16161a', fg: '#f2c230' });
+
+  c.likeLine(62, 42.5, 68, 42.5, 4).likeLine(39, 44.5, 45, 44.5, 4).likeLine(39, 68, 53, 68, 8).likeLine(55.5, 58.5, 57.5, 58.5, 2).likeLine(37, 55.5, 45, 55.5, 5);
+  placard(c, 40, 37.3, 'THE BOWL\n(DEEP END)', { facing: 2, size: 66, ...DARK });
+  placard(c, 60, 37.3, 'NO GODS\nNO MASTERS\nNO HELMETS', { facing: 2, ...DARK });
+  placard(c, 51, 82.3, 'SKATEBOARDING\nPROHIBITED\n(SINCE 1977)', { facing: 0, size: 48, ...RED });
+  c.place('bench', 68, 48.6, { turn: 2 }).place('bin', 74.2, 66.3);
+  lamps(c, [[35.6, 52.3], [55, 49], [63.4, 49], [57.4, 65.6], [63.5, 70.5], [35.6, 65.6], [69.4, 82.4]]);
 }
 
 // ——————————————————————————————————————————————————————————— The Alignment District
@@ -1128,11 +1171,10 @@ function furnish(c) {
   const rnd = random(77);
   const colour = () => CANVAS[Math.floor(rnd() * CANVAS.length)];
 
-  // Portland Heights: the farmers' market in the park.
-  stall(c, 37.5, 79.5, 'KOMBUCHA', '#3a8a4a');
-  stall(c, 41.5, 79.5, 'SOURDOUGH', '#c8882a');
-  stall(c, 49.5, 66, 'ARTISAN PROMPTS', '#8a3aa8');
-  stall(c, 72.5, 55.8, 'SEED SWAP', '#3a8a4a');
+  // Portland Heights: the farmers' market by the community garden, a stall outside the skate shop.
+  stall(c, 38, 29, 'KOMBUCHA', '#3a8a4a');
+  stall(c, 49, 29, 'SOURDOUGH', '#c8882a');
+  stall(c, 69.5, 75.4, 'GRIP TAPE', '#16161a');
 
   // The Alignment District: the prediction market, and the Pause camp, a year in.
   stall(c, 86, 42.5, 'p(DOOM)', '#c8382c');
@@ -1195,14 +1237,13 @@ function furnish(c) {
 
 /**
  * Two rings round the north of the city, one each way; rings round
- * Brussels and Hype Valley, and round the middle of the Alignment District,
- * Portland Heights and the Timeline; trucks round the compute farm; the
+ * Brussels and Hype Valley, and round the middle of the Alignment District
+ * and the Timeline; trucks round the compute farm; the
  * trolley, round its problem; and the superhighway, which never stops.
  */
 function traffic(c) {
   c.road([[9, 9], [227, 9], [227, 85], [9, 85]], { cars: 10, speed: 4.2 });
   c.road([[7, 7], [7, 87], [229, 87], [229, 7]], { cars: 10, speed: 4.6 });
-  c.road([[33, 35], [54, 35], [54, 59], [33, 59]], { cars: 2, speed: 3.4 });
   c.road([[105, 35], [131, 35], [131, 59], [105, 59]], { cars: 3, speed: 3.6 });
   c.road([[106, 113], [131, 113], [131, 137], [106, 137]], { cars: 3, speed: 3.6 });
   c.road([[104, 111], [104, 139], [133, 139], [133, 111]], { cars: 3, speed: 3.8 });
@@ -1233,12 +1274,12 @@ function crowds(c) {
   let seed = 1;
   const at = (kind, x, z, w, d, n, opts = {}) => c.crowd(kind, x, z, w, d, n, { seed: seed++, ...opts });
   // Portland Heights.
-  at('commune', 11, 11, 18, 20, 3); at('commune', 57, 36, 19, 22, 5); at('theorist', 34, 10, 19, 22, 3);
-  at('scroller', 34, 62, 19, 22, 4); at('scroller', 57, 10, 19, 22, 2); at('anarchist', 34, 36, 19, 22, 4);
-  at('theorist', 57, 62, 19, 22, 2); at('replyguy', 10, 62, 20, 22, 2); at('drunk', 10, 36, 20, 22, 1);
-  at('yimby', 57, 10, 19, 22, 3); at('nimby', 10, 10, 20, 22, 2); at('nimby', 57, 62, 19, 22, 3);
-  at('folksinger', 34, 62, 19, 22, 3); at('dropout', 34, 36, 19, 22, 4); at('simulationist', 57, 36, 19, 22, 2);
-  at('cyclist', 10, 62, 66, 22, 3); at('cat', 10, 10, 66, 74, 2);
+  at('commune', 11, 11, 18, 20, 3); at('commune', 10, 62, 20, 22, 5); at('theorist', 34, 10, 19, 22, 3);
+  at('scroller', 34, 36, 42, 48, 4); at('scroller', 57, 10, 19, 22, 2); at('anarchist', 34, 36, 42, 48, 5);
+  at('theorist', 10, 10, 20, 22, 2); at('replyguy', 10, 62, 20, 22, 2); at('drunk', 10, 36, 20, 22, 1);
+  at('yimby', 57, 10, 19, 22, 3); at('nimby', 10, 10, 20, 22, 2); at('nimby', 57, 10, 19, 22, 2);
+  at('folksinger', 10, 62, 20, 22, 3); at('dropout', 34, 36, 42, 48, 6); at('simulationist', 34, 36, 42, 48, 3);
+  at('cyclist', 10, 10, 66, 74, 3); at('cat', 10, 10, 66, 74, 2); at('influencer', 34, 36, 42, 48, 2);
   // The Alignment District: the plaza, the stage, the offices, the building site.
   at('pauser', 107, 36, 23, 22, 8, { range: 4 }); at('doomer', 107, 36, 23, 22, 3); at('altruist', 107, 36, 23, 22, 2);
   at('pauser', 134, 44, 22, 13, 7, { range: 4 }); at('doomer', 134, 44, 22, 13, 3); at('purist', 134, 36, 22, 22, 2);

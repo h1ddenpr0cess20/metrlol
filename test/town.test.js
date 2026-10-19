@@ -5,6 +5,8 @@ import * as GFX from '../src/vendor/gfx/index.js';
 import { buildMap, isFlat } from '../src/map.js';
 import { drawStructures, STRUCTURES } from '../src/structures.js';
 import { SURFACES } from '../src/surfaces.js';
+import { placeBall } from '../src/physics.js';
+import { createRun, STEP, stepRun } from '../src/run.js';
 import { createTown, SIZE } from '../src/town.js';
 
 const town = createTown();
@@ -143,4 +145,19 @@ test('no oil field: the city is not made of petroleum', () => {
   for (const t of ['derrick', 'stack', 'piperack', 'sphere']) assert.ok(!town.props.some((p) => p.type === t), t);
   const oil = town.cells.filter((c) => c.surface === 'oil').length;
   assert.ok(oil < 60, `${oil} tiles of oil`);
+});
+
+test('the skate park: a bowl near two deep that the ball can roll out of, a half pipe with a deck each end', () => {
+  assert.ok(town.heightAt(42, 44.5) < -1.8, 'deep');
+  for (const [push, name] of [[[1, 0], 'out the shallow end'], [[0, -1], 'up the deep end']]) {
+    const run = createRun(GFX, { map: town, foes: false });
+    placeBall(run.ball, 42, -1.9, 44.5);
+    let out = false;
+    for (let t = 0; t < 6 && !out; t += STEP) {
+      stepRun(run, push, STEP);
+      out = town.cell(Math.floor(run.ball.x), Math.floor(run.ball.z)).surface !== 'pool' || Math.hypot(run.ball.x - 42, run.ball.z - 44.5) > 6.5;
+    }
+    assert.ok(out, name);
+  }
+  assert.ok(town.heightAt(56.5, 42) > 1.8 && town.heightAt(73.5, 42) > 1.8 && town.heightAt(65, 42) < 0.2);
 });

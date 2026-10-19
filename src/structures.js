@@ -178,6 +178,16 @@ const DRAW = {
     }
   },
 
+  /** A handrail from (x, y0, z) down to (x1, y1, z1), on posts. */
+  handrail(k, t, p) {
+    const a = [p.x, p.y0, p.z], b = [p.x1, p.y1, p.z1];
+    k.beam(a, b, 0.035, '#c8ccd2', { finish: 'shiny', segments: 10 });
+    for (const f of [0.05, 0.5, 0.95]) {
+      const q = a.map((v, i) => v + (b[i] - v) * f);
+      k.beam(q, [q[0], q[1] - 0.85, q[2]], 0.028, '#8a8f9a', { finish: 'shiny' });
+    }
+  },
+
   fountain(k, t, p, y) {
     // A stone basin in tiers, water in each, spilling over.
     k.cyl([p.x, y + 0.2, p.z], [0.32, 0.46], 0.4, '#c8c2b4', { segments: 24 });

@@ -1,7 +1,7 @@
 /**
  * The way round every golden GPU in the city, for the autopilot: where it
  * finds its own way (`to`), and where it follows set waypoints (`via`) —
- * up the quarter pipe, the slippery slope and the hockey stick flat out,
+ * up the quarter pipe in the skate park, the slippery slope and the hockey stick flat out,
  * up the food co-op's ramp and the Euro shop's, over the footbridge and
  * off it onto the central reservation, across the superhighway in a gap in
  * the traffic, along the chilled water main, along the plank to the island
@@ -55,8 +55,8 @@ export const TOUR = [
   { to: [23.5, 64.6] },
   { via: [v(23.5, 72.5, { speed: 3 }), v(21.6, 72.5, { speed: 2 }), v(16.5, 67.5, { speed: 2.5 })], expect: 'On the food co-op roof' },
   { via: [v(22.6, 72.5, { speed: 2 }), v(23.6, 72.4, { speed: 2 }), v(23.5, 65.5, { speed: 2.5 })] },
-  { to: [44.6, 47], stop: true },
-  { via: [v(51.9, 47, { speed: 12, radius: 0.9 })], expect: 'Up the quarter pipe (mural side)' },
+  { to: [66.6, 74], stop: true },
+  { via: [v(73.9, 74, { speed: 12, radius: 0.9 })], expect: 'Up the quarter pipe (mural side)' },
   { to: [43.5, 23], expect: 'The community garden' },
   { to: [65.5, 19.5], expect: 'The tiny house village' },
   // The Alignment District.

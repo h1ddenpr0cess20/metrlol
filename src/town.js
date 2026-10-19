@@ -120,6 +120,8 @@ export function createTown() {
   brussels(c);
   computeFarm(c);
   superhighway(c);
+  furnish(c);
+  scrub(c);
   streetFurniture(c);
   traffic(c);
   crowds(c);
@@ -565,6 +567,12 @@ function ivoryTower(c) {
   placard(c, 206, 57.5, 'TROLLEY PROBLEM\nPULL THE LEVER?', { facing: 0, size: 54 });
   placard(c, 206, 60.5, '(THE LEVER IS\nA METAPHOR)', { facing: 2, size: 54 });
 
+  // The philosophy department, and Bayes Hall.
+  c.block(167, 33, 14, 8, CURB + 4.2, { wall: '#c8b098', facade: 'brick', base: CURB, door: 's', lit: 0.5 });
+  screen(c, 174, 41.05, CURB + 2.4, 'PHILOSOPHY\n(NOW HIRING)', { facing: 0, w: 4, h: 1.2, size: 64, bg: '#2a2418', fg: '#f4e0b0' });
+  c.block(208, 38, 14, 6, CURB + 3.6, { wall: '#d8dce4', facade: 'office', base: CURB, door: 's', lit: 0.5 });
+  screen(c, 215, 44.05, CURB + 2.0, 'BAYES HALL\n(PROBABLY)', { facing: 0, w: 4.4, h: 1.2, size: 64, bg: '#0a1a3a', fg: '#5ac8ff' });
+
   // The quad: the statue, the dorms, the trees.
   c.place('statue', 193, 40, { turn: 2 });
   c.whetstone('The Quad', 188.5, 40.5);
@@ -810,6 +818,15 @@ function hypeValley(c) {
   placard(c, P.x, P.z - 13.5, 'SAND HILL\nPRIVATE\n(YOU CAN\'T AFFORD IT)', { facing: 2, size: 44 });
   c.likeLine(P.x - 11, P.z, P.x - 5, P.z, 4).likeLine(P.x, P.z + 11, P.x, P.z + 5, 4);
 
+  // Startup row, at the technology trigger: everyone hiring, nobody saying for what.
+  c.block(161, 110, 7, 10, 4.2, { wall: '#e8eaee', facade: 'office', base: 0, lit: 0.7 });
+  screen(c, 168.05, 115, 1.4, 'WE\'RE\nHIRING', { facing: 1, w: 3.4, h: 1.6, size: 84, bg: '#1a2a0a', fg: '#c8ff5a' });
+  c.block(161, 91, 7, 9, 3.4, { wall: '#c8d8e8', facade: 'office', base: 0, lit: 0.7 });
+  screen(c, 168.05, 95.5, 1.0, 'STEALTH\nMODE', { facing: 1, w: 3.4, h: 1.6, size: 84, bg: '#16161a', fg: '#e8e4d8' });
+  // The hacker house.
+  house(c, 188, 141, 6, 5, '#e8d8c0', { door: 'n', h: 2.4 });
+  placard(c, 186.5, 139.4, 'HACKER HOUSE\nWE SHIP\n(NOTHING)', { facing: 2, size: 50 });
+
   c.whetstone('Hype Valley', 165.5, 145.5);
   scatter(c, 'tree', 160, 128, 66, 36, 18, { seed: 31, surfaces: ['grass'], maxH: 3.5 });
   scatter(c, 'shrub', 160, 88, 66, 36, 30, { seed: 37, surfaces: ['grass'], maxH: 7 });
@@ -995,7 +1012,10 @@ function computeFarm(c) {
   // Yard lamps.
   lamps(c, [[184, 204], [196, 204], [210, 204], [222, 204], [184, 222], [214, 220], [176, 236], [204, 240], [150, 214], [140, 236], [128, 228]]);
 
-  // Scrub and rocks over the open gravel.
+}
+
+/** Scrub and rocks over the compute farm's open gravel, round whatever stands on it. */
+function scrub(c) {
   const rnd = random(4242);
   const open = (x, z) => {
     const cell = c.cell(Math.floor(x), Math.floor(z));
@@ -1038,6 +1058,137 @@ function superhighway(c) {
   c.likeLine(246.5, 126, 246.5, 244, 16);
   c.likeLine(246.5, 10, 246.5, 88, 10);
   c.gpu('The edge of the feed', SIZE - 3.4, SIZE - 3.4, { y: berm(SIZE - 3.4, SIZE - 3.4) });
+}
+
+// ——————————————————————————————————————————————————————————— Furnishing
+
+/** Whether the rectangle is free to put something on: no road or water, nothing solid or round, no like, golden GPU or whetstone. */
+function clear(c, x0, z0, x1, z1, m = 0.4) {
+  for (let z = Math.floor(z0); z < z1; z++) {
+    for (let x = Math.floor(x0); x < x1; x++) {
+      const cell = c.cell(x, z);
+      if (!cell || ['road', 'highway', 'water', 'tar'].includes(cell.surface)) return false;
+    }
+  }
+  const hit = (a0, b0, a1, b1) => a0 < x1 + m && a1 > x0 - m && b0 < z1 + m && b1 > z0 - m;
+  if (c.solids.some((s) => hit(s.min[0], s.min[2], s.max[0], s.max[2]))) return false;
+  if (c.cylinders.some((q) => hit(q.x - q.r, q.z - q.r, q.x + q.r, q.z + q.r))) return false;
+  return ![...c.likes, ...c.gpus, ...c.stones].some((p) => hit(p.x - 0.3, p.z - 0.3, p.x + 0.3, p.z + 0.3));
+}
+
+/** A shipping container, solid, from (x, z), `w` by `d` (its doors at the long end). */
+function container(c, x, z, w, d, colour) {
+  if (!clear(c, x, z, x + w, z + d)) return;
+  const y = c.heightAt(x + w / 2, z + d / 2);
+  c.prop('container', x, z, { x1: x + w, z1: z + d, colour, y });
+  c.solid(x, y, z, x + w, y + 2.6, z + d);
+}
+
+/** A tent pitched at (x, z): a dome, or a bell tent (`peak`). */
+function tent(c, x, z, colour, { r = 1.1, peak = false } = {}) {
+  if (!clear(c, x - r, z - r, x + r, z + r)) return;
+  const y = c.heightAt(x, z);
+  c.prop('tent', x, z, { r, colour, peak });
+  c.cylinder(x, z, r * 0.85, y, y + (peak ? 2 : r * 0.72));
+}
+
+/** A market stall at (x, z), facing +z, with `text` on its sign. */
+function stall(c, x, z, text, colour) {
+  if (!clear(c, x - 1.25, z - 0.65, x + 1.25, z + 0.65)) return;
+  const y = c.heightAt(x, z);
+  c.prop('stall', x, z, { text, colour });
+  c.solid(x - 1.2, y, z - 0.36, x + 1.2, y + 0.95, z + 0.36);
+}
+
+/** A row of solar panels along x from (x, z), `length` long. */
+function solar(c, x, z, length) {
+  if (!clear(c, x, z - 0.8, x + length, z + 0.8)) return;
+  c.prop('solar', x, z, { length });
+  c.solid(x, 0, z - 0.8, x + length, 1.4, z + 0.8);
+}
+
+/** A parasol, and a chair or two under it. */
+function parasol(c, x, z, colour) {
+  if (!clear(c, x - 0.5, z - 0.5, x + 0.5, z + 0.5)) return;
+  const y = c.heightAt(x, z);
+  c.prop('parasol', x, z, { colour });
+  c.cylinder(x, z, 0.06, y, y + 2.2);
+  c.prop('chair', x + 1.2, z + 0.3).prop('chair', x - 1.2, z - 0.3);
+}
+
+const CANVAS = ['#e07a2a', '#3a8a4a', '#2a5aa8', '#c8382c', '#f2c230', '#8a3aa8', '#e8e4dc'];
+
+/**
+ * What fills the city in round the set pieces: market stalls, protest
+ * camps, café terraces, parked cars, containers, solar panels, tents on the
+ * far side, and e-scooters left everywhere. Each goes only where there is
+ * room for it.
+ */
+function furnish(c) {
+  const rnd = random(77);
+  const colour = () => CANVAS[Math.floor(rnd() * CANVAS.length)];
+
+  // Portland Heights: the farmers' market in the park.
+  stall(c, 37.5, 79.5, 'KOMBUCHA', '#3a8a4a');
+  stall(c, 41.5, 79.5, 'SOURDOUGH', '#c8882a');
+  stall(c, 49.5, 66, 'ARTISAN PROMPTS', '#8a3aa8');
+  stall(c, 72.5, 55.8, 'SEED SWAP', '#3a8a4a');
+
+  // The Alignment District: the prediction market, and the Pause camp, a year in.
+  stall(c, 86, 42.5, 'p(DOOM)', '#c8382c');
+  stall(c, 96, 43.5, 'p(AGI)', '#1a3aa0');
+  stall(c, 96, 50, 'BETS', '#3a8a4a');
+  for (const [x, z] of [[110, 43], [110, 49.5], [126.5, 51.5], [137.5, 54.5], [141.5, 55.5], [152.5, 54.5], [148, 55.5]]) tent(c, x, z, colour(), { peak: rnd() < 0.3 });
+  placard(c, 145, 50.5, 'DAY 365\nOF THE PAUSE\n(STILL HERE)', { facing: 0, size: 50, ...RED });
+
+  // The Ivory Tower: the student encampment, the free pizza.
+  for (const [x, z] of [[219, 54], [221.5, 58.5], [218.5, 62.5], [222, 67]]) tent(c, x, z, colour());
+  stall(c, 188, 60, 'FREE PIZZA (AI TALK)', '#c8382c');
+  placard(c, 219, 50.5, 'STUDENTS FOR\nA PAUSE\n(UNTIL FINALS)', { facing: 0, size: 48 });
+
+  // The Pause Compound: the preppers' stash, their camp round the Prophet, the vegetable patch.
+  for (const z of [113, 116.5]) container(c, 11.5, z, 6, 2.4, '#5a7a3a');
+  for (const [x, z] of [[69.5, 120], [72.5, 120], [69.5, 128], [72.5, 128], [69.5, 140], [72.5, 140]]) container(c, x, z, 2.4, 6, ['#5a7a3a', '#8a5a3a', '#4a5a6a'][Math.floor(rnd() * 3)]);
+  for (const [x, z] of [[41.5, 146.5], [55.5, 146.5], [41.5, 153], [56, 152.5]]) tent(c, x, z, '#6a6a4a', { peak: true });
+  c.paint(11, 130, 6, 5, 'dirt');
+  for (const z of [131, 133.5]) for (let x = 11.6; x < 16.5; x += 1.4) c.place('shrub', x, z, { scale: 0.55, angle: x * z });
+  placard(c, 14, 129, 'BEANS\n(YEAR ONE)', { facing: 2, size: 64 });
+
+  // The Timeline: hot takes, served hot.
+  stall(c, 124, 119.5, 'HOT TAKES', '#c8382c');
+  stall(c, 113, 119.5, 'TAKES (COLD)', '#2a5aa8');
+  stall(c, 139.5, 147.5, 'ORGANIC LIKES', '#3a8a4a');
+
+  // Brussels-sur-Mer: the cookie consent desk, parked cars, the café terrace, the festival, the beach.
+  stall(c, 18, 184.5, 'COOKIE CONSENT', '#1a3aa0');
+  stall(c, 24, 184.5, 'FORMS', '#1a3aa0');
+  for (let x = 80.5; x < 118; x += 3) c.mark(x, 186, 0.12, 4);
+  for (let x = 82, i = 0; x < 118; x += 3, i++) {
+    if (rnd() < 0.3 || !clear(c, x - 0.6, 186.2, x + 0.6, 189.8)) continue;
+    c.place(['sedan', 'hatchback', 'pickup'][i % 3], x, 188, { paint: ['#c8382c', '#2c6ec8', '#e8e2d6', '#3a8a4a', '#1c1b1f'][i % 5], angle: Math.PI });
+  }
+  for (const [x, z] of [[86, 205], [90, 209.2], [98, 205], [102, 209.2], [74, 209]]) parasol(c, x, z, ['#1a3aa0', '#c8382c'][Math.round(x) % 2]);
+  for (const [x, z] of [[17.5, 206.5], [24.5, 201], [11.5, 205], [18, 214.5]]) tent(c, x, z, colour());
+  stall(c, 28, 211, 'CLUB MATE', '#16161a');
+  stall(c, 30, 226.6, 'GLACES', '#f2c230');
+  stall(c, 70, 226.6, 'GAUFRES', '#c8882a');
+
+  // The Compute Farm: modular data centres in containers, generators, the solar farm.
+  for (const x of [140, 148, 156, 164]) for (const z of [208.5, 212.5]) container(c, x, z, 6, 2.4, ['#c8ccd2', '#2a6ac8', '#e8e4dc'][Math.floor(rnd() * 3)]);
+  container(c, 181, 170.5, 5, 2.4, '#e8b020');
+  container(c, 181, 192, 5, 2.4, '#e8b020');
+  for (const z of [207.5, 211]) { solar(c, 186, z, 11); solar(c, 210, z, 12); }
+  for (let x = 127; x < 228; x += 6) if (clear(c, x - 0.3, 247.7, x + 0.3, 248.3)) c.place('pine', x, 248, { scale: 1 + rnd() * 0.3, angle: x });
+
+  // The far side: the e/acc camp, all the way down the strip.
+  for (let z = 132; z < 240; z += 9) {
+    tent(c, 249, z, colour(), { r: 1.0, peak: rnd() < 0.4 });
+    if (rnd() < 0.5) c.lamp(248.5, z + 3, { colour: '#ff9a3a', reach: 4, height: 0.4, glow: 0.9 });
+  }
+  placard(c, 247, 128.6, 'e/acc CAMP\nACCELERATE\n(TOWARD WHAT?)', { facing: 2, size: 48 });
+
+  // E-scooters, left in the middle of everything.
+  scatter(c, 'scooter', 10, 10, 220, 240, 70, { seed: 91, surfaces: ['concrete', 'brick', 'marble', 'forecourt', 'lawn', 'gravel'], scale: [1, 1] });
 }
 
 // ——————————————————————————————————————————————————————————— The traffic
@@ -1085,37 +1236,58 @@ function crowds(c) {
   at('commune', 11, 11, 18, 20, 3); at('commune', 57, 36, 19, 22, 5); at('theorist', 34, 10, 19, 22, 3);
   at('scroller', 34, 62, 19, 22, 4); at('scroller', 57, 10, 19, 22, 2); at('anarchist', 34, 36, 19, 22, 4);
   at('theorist', 57, 62, 19, 22, 2); at('replyguy', 10, 62, 20, 22, 2); at('drunk', 10, 36, 20, 22, 1);
+  at('yimby', 57, 10, 19, 22, 3); at('nimby', 10, 10, 20, 22, 2); at('nimby', 57, 62, 19, 22, 3);
+  at('folksinger', 34, 62, 19, 22, 3); at('dropout', 34, 36, 19, 22, 4); at('simulationist', 57, 36, 19, 22, 2);
+  at('cyclist', 10, 62, 66, 22, 3); at('cat', 10, 10, 66, 74, 2);
   // The Alignment District: the plaza, the stage, the offices, the building site.
   at('pauser', 107, 36, 23, 22, 8, { range: 4 }); at('doomer', 107, 36, 23, 22, 3); at('altruist', 107, 36, 23, 22, 2);
   at('pauser', 134, 44, 22, 13, 7, { range: 4 }); at('doomer', 134, 44, 22, 13, 3); at('purist', 134, 36, 22, 22, 2);
   at('forecaster', 80, 36, 23, 22, 4); at('rationalist', 134, 62, 22, 22, 5); at('longtermist', 80, 10, 23, 22, 2);
   at('researcher', 80, 10, 23, 22, 2); at('altruist', 107, 62, 23, 22, 5); at('longtermist', 107, 62, 23, 22, 1);
   at('substacker', 80, 62, 23, 22, 2); at('farmer', 134, 10, 22, 22, 2); at('replyguy', 107, 10, 23, 22, 2);
-  at('gatekeeper', 80, 62, 23, 22, 1);
+  at('gatekeeper', 80, 62, 23, 22, 1); at('ethicist', 107, 62, 23, 22, 3); at('ethicist', 80, 36, 23, 22, 2);
+  at('prompter', 80, 10, 23, 22, 3); at('prompter', 134, 10, 22, 22, 2); at('shoggoth', 134, 62, 22, 22, 3);
+  at('shoggoth', 107, 36, 23, 22, 2); at('pallbearer', 134, 36, 22, 22, 2);
   // The Ivory Tower.
   at('rationalist', 160, 10, 66, 74, 5); at('researcher', 160, 10, 66, 74, 5); at('theorist', 160, 10, 66, 74, 4);
   at('purist', 160, 10, 66, 74, 3); at('longtermist', 160, 10, 66, 74, 2); at('forecaster', 160, 10, 66, 74, 2);
   at('gatekeeper', 160, 46, 66, 38, 1); at('podcaster', 160, 10, 66, 74, 1);
+  at('professor', 160, 10, 66, 74, 6); at('philosopher', 160, 10, 66, 74, 4); at('postdoc', 160, 10, 66, 74, 5);
+  at('labrat', 160, 46, 66, 38, 4); at('cat', 160, 10, 66, 74, 2); at('prompter', 160, 10, 66, 74, 2);
   // The Pause Compound.
   at('pauser', 12, 90, 62, 72, 8, { range: 4 }); at('doomer', 12, 90, 62, 72, 6); at('forecaster', 12, 90, 62, 72, 3);
   at('researcher', 12, 90, 62, 72, 3); at('purist', 12, 90, 62, 72, 2); at('rationalist', 12, 90, 62, 72, 2);
+  at('prepper', 12, 90, 62, 72, 7); at('pallbearer', 12, 90, 62, 72, 4); at('deadposter', 12, 90, 62, 72, 5);
   c.foe('prophet', 48.5, 151.5, { range: 2.5, notice: 8 });
   // The Timeline.
   at('replyguy', 80, 88, 76, 22, 6, { range: 5 }); at('farmer', 107, 114, 23, 22, 4); at('replyguy', 107, 114, 23, 22, 4);
   at('substacker', 80, 88, 76, 22, 4); at('thoughtleader', 80, 88, 76, 22, 3); at('gatekeeper', 134, 114, 22, 22, 2);
   at('scroller', 134, 114, 22, 22, 3); at('replyguy', 80, 114, 23, 22, 3); at('farmer', 134, 140, 22, 24, 4);
   at('substacker', 80, 140, 50, 24, 3); at('podcaster', 107, 140, 23, 24, 2); at('drunk', 80, 88, 76, 22, 1);
+  at('influencer', 80, 88, 76, 76, 6); at('maincharacter', 107, 114, 23, 22, 4); at('screenshotter', 80, 88, 76, 76, 4);
+  at('newsletter', 80, 88, 76, 76, 4); at('bird', 107, 114, 23, 22, 1); at('hottakes', 80, 88, 76, 76, 3);
+  at('deadposter', 134, 114, 22, 22, 2); at('festivalbro', 80, 140, 50, 24, 2);
   // Hype Valley.
   at('accelerationist', 160, 88, 66, 36, 6, { maxH: 7 }); at('vc', 160, 128, 66, 36, 5, { maxH: 3.5 });
   at('podcaster', 176, 128, 14, 20, 3); at('thoughtleader', 160, 128, 66, 36, 4, { maxH: 3.5 }); at('accelerationist', 160, 128, 66, 36, 3, { maxH: 3.5 });
+  at('founder', 160, 88, 66, 76, 6, { maxH: 7 }); at('recruiter', 160, 128, 66, 36, 3, { maxH: 3.5 }); at('cryptobro', 160, 88, 66, 76, 4, { maxH: 7 });
+  at('biohacker', 160, 88, 66, 76, 4, { maxH: 7 }); at('corgi', 160, 128, 66, 36, 3, { maxH: 3.5 }); at('festivalbro', 160, 88, 66, 36, 2, { maxH: 7 });
+  c.foe('billionaire', SAND_HILL.x - 3, SAND_HILL.z + 4.5, { range: 3, notice: 8 });
   // Brussels-sur-Mer.
   at('eurocrat', 10, 168, 52, 24, 6); at('eurocrat', 66, 168, 54, 24, 3); at('striker', 66, 168, 54, 24, 6);
   at('commuter', 66, 168, 54, 24, 3); at('commuter', 66, 196, 54, 22, 3); at('raver', 10, 196, 52, 22, 6);
   at('doorman', 30, 196, 28, 8, 2); at('raver', 6, 224, 114, 8, 4); at('eurocrat', 66, 196, 54, 22, 3);
   at('drunk', 66, 196, 54, 22, 1);
+  at('dpo', 10, 168, 52, 24, 4); at('dpo', 66, 196, 54, 22, 2); at('waiter', 66, 196, 54, 22, 4); at('tourist', 66, 196, 54, 22, 5);
+  at('nonna', 66, 196, 54, 22, 2); at('cabbie', 66, 168, 54, 24, 4); at('cyclist', 10, 168, 110, 50, 3);
+  at('lifeguard', 6, 224, 114, 8, 3); at('surfer', 6, 224, 114, 8, 4); at('tourist', 6, 224, 114, 8, 3); at('festivalbro', 10, 196, 52, 22, 3);
   // The Compute Farm.
   at('accelerationist', 124, 200, 100, 40, 6); at('vc', 124, 200, 100, 40, 3); at('podcaster', 124, 200, 100, 40, 2);
   at('thoughtleader', 180, 168, 46, 28, 2); at('accelerationist', 180, 168, 46, 28, 3);
-  // The far side, up on the hill.
-  at('accelerationist', 243, 92, 8, 30, 3, { maxH: 3 });
+  at('technician', 124, 168, 102, 73, 6); at('oncall', 124, 168, 102, 73, 4); at('wrangler', 124, 200, 100, 40, 4);
+  at('guard', 124, 168, 102, 73, 4); at('robot', 124, 200, 100, 40, 4); at('keeper', 180, 168, 46, 28, 2); at('founder', 124, 200, 100, 40, 2);
+  // The far side, up on the hill and down the strip.
+  at('accelerationist', 243, 92, 8, 30, 3, { maxH: 3 }); at('accelerationist', 243, 126, 8, 120, 4);
+  at('alien', 243, 10, 8, 80, 3); at('alien', 243, 126, 8, 120, 2); at('cryptobro', 243, 126, 8, 120, 2);
+  c.foe('edgecase', 247.5, 60.5, { range: 3, notice: 8 });
 }

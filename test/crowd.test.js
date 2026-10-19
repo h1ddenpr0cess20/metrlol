@@ -51,7 +51,7 @@ test('the two new people bake and move', () => {
 
 test('the city is full of people, none of them inside anything or on a roof', () => {
   const town = createTown();
-  assert.ok(town.foes.length >= 90, `${town.foes.length} people`);
+  assert.ok(town.foes.length >= 400, `${town.foes.length} people`);
   for (const f of town.foes) {
     assert.ok(FOES[f.kind], f.kind);
     const h = town.heightAt(f.x, f.z);
@@ -64,6 +64,9 @@ test('the city is full of people, none of them inside anything or on a roof', ()
   // Every side of the argument turns up.
   const kinds = new Set(town.foes.map((f) => f.kind));
   for (const k of ['pauser', 'doomer', 'altruist', 'rationalist', 'anarchist', 'eurocrat', 'striker', 'accelerationist', 'replyguy', 'prophet']) assert.ok(kinds.has(k), k);
+  // Everybody in the roster is out there somewhere, the bosses once each.
+  for (const k of Object.keys(FOES)) assert.ok(kinds.has(k), `nobody is a ${k}`);
+  for (const k of ['prophet', 'billionaire', 'edgecase']) assert.equal(town.foes.filter((f) => f.kind === k).length, 1, k);
 });
 
 test('fast enough, a pauser is smashed and thrown clear; the ball goes on at speed', () => {

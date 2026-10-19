@@ -8,6 +8,7 @@
  */
 export const BREAKABLE = Object.freeze({
   cone: { at: 2.5, hype: 5 },
+  scooter: { at: 2.5, hype: 8 },
   tyres: { at: 3, hype: 8 },
   bin: { at: 4, hype: 10 },
   mailbox: { at: 4, hype: 10 },

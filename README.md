@@ -71,7 +71,7 @@ bounce off them.
 Someone who isn't smashed is still worn down, so a doorman you can't hit hard
 enough can be hit twice. The Prophet of Doom takes a good deal more.
 
-- **Acceleration** is how you hit what you couldn't: hold it and the ball reaches speeds that smash anyone but the doorman and the Prophet. It runs dry in about three seconds, and refills in five.
+- **Acceleration** is how you hit what you couldn't: hold it and the ball reaches speeds that smash anyone but the toughest (the doorman, datacentre security, the old bird) and the bosses. It runs dry in about three seconds, and refills in five.
 - **Cred** is the score. Smashes build a **combo** (×5 at most) that multiplies each one.
 - **Time horizon**, up in the corner, doubles every six smashes. The line goes up.
 - **Props** go too: bins, benches, mailboxes, signs, hydrants, street lamps, trees, charging posts, parked cars, and the bronze paperclip in the plaza. Each has a speed it takes (a cone 2.5, a bin 4, a lamp post 9, the paperclip 14), and is as solid as a wall below it. They are worth a little cred each, and come back with a new run.
@@ -109,12 +109,17 @@ The music is Metroll's hardcore track (New York, 1989: a d-beat, no encores), st
 
 ## The cast
 
-Twenty-eight kinds of people, sculpted in code (`src/cast/`) and baked in
-background workers while the page loads; most are Metroll's, in new names
-(the doomer is the mourner, the forecaster is the coroner, the longtermist is
-the wizard, the effective altruist is the straight-edge kid: *donates ten
-percent, does not shut up about the ten percent*). The Pause protester and
-the Eurocrat are new. Who they are, and what they shout, is in `src/foes.js`.
+Seventy-three kinds of people, about 440 of them, sculpted in code
+(`src/cast/`) and baked in background workers while the page loads. Who they
+are, and what they shout, is in `src/foes.js`. They come from the games before
+it, in new names:
+
+- **from Metroll**: the doomer (the mourner), the forecaster (the coroner), the longtermist (the wizard), the effective altruist (the straight-edge kid: *donates ten percent, does not shut up about the ten percent*), the rationalists, the reply guys and most of the rest; and now the protest singer (the folkie), the dropout founder (the skater), the pallbearer, the dead internet (the zombie), the lab rat, Schrödinger's cat, the humanoid robot, the datacentre technician (the welder), the SRE on call (the sound guy), the cable wrangler (the roadie), datacentre security, the crypto bro (Florida Man), the AI ethicist (the medic), the shoggoth enjoyer (the goth) and the keeper of the weights (the knight);
+- **from Rock 'n' Roller**: the YIMBY (the hipster), the NIMBY (the angry neighbour), the AI influencer, the main character (phone guy), the old bird (the mascot), the founder (the A&R suit);
+- **from Rock 'n' Roller II**: the recruiter (the agent), the prepper (the cowboy), the newsletter kid (the newsie), the screenshotter (the paparazzo), the tourist, a non-human intelligence (the rubber alien), and **the Billionaire** (the mogul), a boss, up on Sand Hill by the infinity pool;
+- **from Rock 'n' Roller III**: the tenured professor (the city gent), the thought experimenter (the mime), the postdoc (the archaeologist), the biohacker (the bull runner), the VC's corgi, the cyclist, the waiter (on strike), the cab driver, the lifeguard, the surfer, nonna, the hot take vendor, and **the Edge Case** (the yeti), a boss, out on the far side past the edge of the training data;
+- **sculpted already but never cast till now**: the data protection officer (the beat cop), the prompt engineer (the scene kid), the simulation theorist (the stoner) and the festival bro (the beer guy);
+- **new in Metrlol**: the Pause protester and the Eurocrat.
 
 ## How it's made
 

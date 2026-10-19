@@ -5,8 +5,9 @@ import { wallMaterial } from './textures.js';
 /**
  * The city's bigger things — tanks and cooling towers, the mast, the crane,
  * the charging canopy, the sandbox, scaffolding, the chilled water main,
- * the screens on the towers, the parasols on the beach, the tunnels, the
- * billboard, the fence round it all — drawn from the map's props
+ * the screens on the towers, the parasols on the beach, containers, tents,
+ * market stalls, solar panels, the tunnels, the billboard, the fence round
+ * it all — drawn from the map's props
  * (`map.props`). What's solid about them is on the map already.
  *
  * Surfaces that want a texture (a tank's welded plates, the chain-link,
@@ -394,6 +395,54 @@ const DRAW = {
     map.lamp(p.x + n[0] * 1.5, p.z + n[1] * 1.5, { colour: p.glow ?? '#b8c8ff', reach: Math.min(8, 3 + p.w), height: 1.8, glow: 0.55 });
   },
 
+  /** A shipping container from (x, z) to (x1, z1), corrugated, its doors at the `door` end ('x' or 'z' side), lying on the ground. */
+  container(k, t, p, y) {
+    const h = p.h ?? 2.6, c = p.colour ?? '#2a6ac8';
+    t.box('corrugated', p.x, y, p.z, p.x1, y + h, p.z1, c, { band: h / 2 });
+    const along = p.x1 - p.x > p.z1 - p.z;
+    // The doors' bars and the corner castings.
+    for (let i = 1; i <= 4; i++) {
+      if (along) k.box([p.x1 + 0.02, y + h / 2, p.z + ((p.z1 - p.z) * i) / 5], [0.04, h * 0.9, 0.05], '#5a6068', { finish: 'shiny' });
+      else k.box([p.x + ((p.x1 - p.x) * i) / 5, y + h / 2, p.z1 + 0.02], [0.05, h * 0.9, 0.04], '#5a6068', { finish: 'shiny' });
+    }
+    for (const cx of [p.x + 0.1, p.x1 - 0.1]) for (const cz of [p.z + 0.1, p.z1 - 0.1]) for (const cy of [y + 0.1, y + h - 0.1]) k.box([cx, cy, cz], [0.22, 0.2, 0.22], '#3a3d44');
+  },
+
+  /** A tent: a dome, or (`peak`) a bell tent on its pole, its guy ropes out to pegs. */
+  tent(k, t, p, y) {
+    const r = p.r ?? 1.1, c = p.colour ?? '#e07a2a';
+    if (p.peak) {
+      k.cone([p.x, y + 1.0, p.z], r, 2.0, c, { segments: 10 });
+      k.cyl([p.x, y + 1.15, p.z], 0.03, 2.3, '#8a6a42', { segments: 6 });
+    } else {
+      k.sphere([p.x, y, p.z], r, c, { scale: [1, 0.72, 1], segments: 14 });
+      k.box([p.x, y + 0.35, p.z + r * 0.92], [0.5, 0.6, 0.05], '#1c1c20');
+    }
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 4 + (i * Math.PI) / 2;
+      k.beam([p.x + Math.cos(a) * r * 0.7, y + (p.peak ? 1.0 : 0.5), p.z + Math.sin(a) * r * 0.7], [p.x + Math.cos(a) * (r + 0.5), y, p.z + Math.sin(a) * (r + 0.5)], 0.008, '#e8e4dc');
+    }
+  },
+
+  /** A market stall: a counter, four posts, a striped awning over it (see WORDS for its sign). Faces +z. */
+  stall(k, t, p, y) {
+    const w = p.w ?? 2.4, d = p.d ?? 1.2, c = p.colour ?? '#c8382c';
+    k.box([p.x, y + 0.45, p.z], [w, 0.9, d * 0.6], '#8a6a42');
+    k.box([p.x, y + 0.92, p.z], [w + 0.1, 0.05, d * 0.66], '#e8e4dc');
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.cyl([p.x + sx * (w / 2 - 0.05), y + 1.05, p.z + sz * (d / 2 - 0.05)], 0.025, 2.1, '#5a6068', { segments: 6 });
+    const n = 8;
+    for (let i = 0; i < n; i++) k.box([p.x - w / 2 + (w * (i + 0.5)) / n, y + 2.05, p.z + 0.05], [w / n + 0.01, 0.04, d + 0.3], i % 2 ? '#f4f1ea' : c, { rot: [0.22, 0, 0] });
+  },
+
+  /** A row of solar panels from x along `length`, tilted to the south, on their frames. */
+  solar(k, t, p, y) {
+    for (let s = 0; s < p.length - 0.5; s += 1.05) {
+      k.box([p.x + s + 0.5, y + 0.95, p.z], [1.0, 0.05, 1.6], '#1a2a4a', { rot: [0.45, 0, 0], finish: 'glass' });
+      k.box([p.x + s + 0.5, y + 0.92, p.z], [1.02, 0.03, 1.64], '#c8ccd2', { rot: [0.45, 0, 0], finish: 'shiny' });
+      for (const dz of [-0.5, 0.5]) k.cyl([p.x + s + 0.5, y + (0.95 - dz * 0.7) / 2, p.z + dz * 0.9], 0.03, 0.95 - dz * 0.7, '#8a9098', { segments: 6 });
+    }
+  },
+
   /** The regulatory sandbox's toys: buckets, a spade, a castle, a little flag. */
   sandbox(k, t, p, y) {
     const { x, z, w, d } = p;
@@ -456,6 +505,11 @@ const WORDS = {
   canopy(GFX, p) {
     const tex = words(GFX, p.text ?? 'CHARGING  ·  €0.79/kWh  ·  +21% VAT  ·  PLEASE ACCEPT ALL COOKIES', { w: 1536, h: 96, bg: '#1a3aa0', fg: '#f4d020', font: '400 62px' });
     return [sign(GFX, tex, [p.x + p.w / 2, p.h + 0.27, p.z + p.d + 0.04], p.w * 0.96, 0.26, 0, 1)];
+  },
+  stall(GFX, p, y) {
+    if (!p.text) return [];
+    const tex = words(GFX, p.text, { w: 512, h: 128, bg: p.colour ?? '#c8382c', fg: '#fff6ee', font: '400 84px' });
+    return [sign(GFX, tex, [p.x, y + 1.55, p.z + (p.d ?? 1.2) / 2 + 0.12], (p.w ?? 2.4) * 0.8, 0.4, 0, 0.85)];
   },
   sandbox(GFX, p, y) {
     const tex = words(GFX, 'REGULATORY SANDBOX', { w: 512, h: 96, bg: '#1a3aa0', fg: '#f4d020', font: '400 56px' });

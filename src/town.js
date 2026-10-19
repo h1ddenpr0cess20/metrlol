@@ -144,18 +144,28 @@ export function createTown() {
 
 const RED = { bg: '#d81c2a', fg: '#fff6ee' }, BLUE = { bg: '#1a3aa0', fg: '#f4d020' }, DARK = { bg: '#16161a', fg: '#e8e4d8' };
 
-/** A freestanding sign with words on both faces, solid unless the ball comes at it hard, standing on (x, z). */
-function placard(c, x, z, text, { facing = 0, w = 1.8, h = 1.1, bg, fg, size, y = null } = {}) {
-  c.prop('placard', x, z, { text, facing, w, h, bg, fg, size, y });
-  const prop = c.props.at(-1);
-  const base = y ?? c.heightAt(x, z) ?? 0;
+/**
+ * A freestanding sign with words on both faces, solid unless the ball comes
+ * at it hard, standing on (x, z): as wide as its longest line and as tall as
+ * its lines need for letters a fifth of a tile high or so, unless `w` and `h`
+ * say.
+ */
+function placard(c, x, z, text, { facing = 0, w = null, h = null, bg, fg, y = null } = {}) {
+  const lines = text.split('\n');
+  w ??= Math.min(3.2, Math.max(1.6, 0.125 * Math.max(...lines.map((l) => l.length)) + 0.3));
+  h ??= Math.min(1.6, Math.max(1.0, 0.24 * lines.length + 0.25));
   const ex = facing % 2 === 0 ? w / 2 : 0.1, ez = facing % 2 === 0 ? 0.1 : w / 2;
-  c.smashable({ kind: 'placard', name: 'placard', ...BREAKABLE.placard, prop }, () => c.solid(x - ex, base, z - ez, x + ex, base + 0.5 + h, z + ez));
+  // On a slope, the board goes level with the higher post, and each post down to its own ground.
+  const feet = [c.heightAt(x - ex, z - ez), c.heightAt(x + ex, z + ez), c.heightAt(x, z)].map((v) => v ?? 0);
+  const base = y ?? Math.max(...feet);
+  c.prop('placard', x, z, { text, facing, w, h, bg, fg, y: base });
+  const prop = c.props.at(-1);
+  c.smashable({ kind: 'placard', name: 'placard', ...BREAKABLE.placard, prop }, () => c.solid(x - ex, Math.min(base, ...feet), z - ez, x + ex, base + 0.5 + h, z + ez));
 }
 
 /** A screen on the face of a building: `text` lit up, `w` by `h`, its middle at (x, y + h / 2, z), facing `facing` quarter turns (0 toward +z). */
-function screen(c, x, z, y, text, { facing = 0, w = 3, h = 1.6, bg, fg, size, glow } = {}) {
-  c.prop('screen', x, z, { y, text, facing, w, h, bg, fg, size, glow });
+function screen(c, x, z, y, text, { facing = 0, w = 3, h = 1.6, bg, fg, glow } = {}) {
+  c.prop('screen', x, z, { y, text, facing, w, h, bg, fg, glow });
 }
 
 /** A block: a raised sidewalk all round, and what's inside on top of it. */
@@ -227,6 +237,12 @@ function lamps(c, points, angle = 0) {
   for (const [x, z] of points) if (c.isOpen(x, z, Infinity, { near: true })) c.place('streetlamp', x, z, { angle });
 }
 
+/** Whether something at (x, z) would stand in front of the sign `p`: too near it, or nearer on the side the camera looks from (the south-east). */
+const inView = (p, x, z) => {
+  const d = Math.hypot(x - p.x, z - p.z);
+  return d < 3.5 || (x > p.x - 1.5 && z > p.z - 1.5 && d < 6);
+};
+
 /** `n` of a model scattered over the rectangle, where somebody could stand (so not in a wall or on a road), the same every time. */
 function scatter(c, name, x, z, w, d, n, { seed = 1, scale = [0.9, 1.2], surfaces = null, maxH = 0.4 } = {}) {
   const rnd = random(seed);
@@ -234,7 +250,7 @@ function scatter(c, name, x, z, w, d, n, { seed = 1, scale = [0.9, 1.2], surface
     const px = x + 0.5 + rnd() * (w - 1), pz = z + 0.5 + rnd() * (d - 1);
     const cell = c.cell(Math.floor(px), Math.floor(pz));
     if (!cell || (surfaces && !surfaces.includes(cell.surface)) || ['road', 'highway', 'sidewalk'].includes(cell.surface)) continue;
-    if (!c.isOpen(px, pz, maxH)) continue;
+    if (!c.isOpen(px, pz, maxH) || c.props.some((q) => q.type === 'placard' && inView(q, px, pz))) continue;
     c.place(name, px, pz, { scale: scale[0] + rnd() * (scale[1] - scale[0]), angle: rnd() * 6.28 });
     placed++;
   }
@@ -332,7 +348,7 @@ function portlandHeights(c) {
   c.place('hydrant', 10.25, 31.4);
   c.gpu('The free stuff table', 20, 29.5);
   c.likeLine(19.4, 13, 19.4, 18, 3).likeLine(19.4, 23, 19.4, 28, 3);
-  placard(c, 11.8, 23.5, 'IN THIS HOUSE\nWE BELIEVE\nIN EVERYTHING', { facing: 3, size: 54 });
+  placard(c, 11.8, 23.5, 'IN THIS HOUSE\nWE BELIEVE\nIN EVERYTHING', { facing: 3 });
 
   // The drained pool, now the community garden.
   block(c, 34, 10, 19, 22);
@@ -342,7 +358,7 @@ function portlandHeights(c) {
   c.gpu('The community garden', 43.5, 23);
   c.likeLine(38.5, 17, 48.5, 17, 6);
   c.prop('chair', 50.5, 21).prop('chair', 50.5, 24.5);
-  placard(c, 43.5, 30.2, 'COMMUNITY\nGARDEN MEETING\nTHU 9PM (AGAIN)', { facing: 0, size: 46 });
+  placard(c, 43.5, 30.2, 'COMMUNITY\nGARDEN MEETING\nTHU 9PM (AGAIN)', { facing: 0 });
 
   // The tiny house village: no cars, no lawns, no privacy.
   block(c, 57, 10, 19, 22, 'lawn');
@@ -355,7 +371,7 @@ function portlandHeights(c) {
   }
   c.gpu('The tiny house village', 65.5, 19.5);
   c.likeLine(63, 16.5, 68, 16.5, 4).likeLine(63, 23, 68, 23, 4);
-  placard(c, 66, 30.3, 'TINY HOUSES\nBIG FEELINGS', { facing: 0, size: 56 });
+  placard(c, 66, 30.3, 'TINY HOUSES\nBIG FEELINGS', { facing: 0 });
 
   // The consensus maze (still voting on the way out).
   block(c, 10, 36, 20, 22);
@@ -363,7 +379,7 @@ function portlandHeights(c) {
   c.gpu('Middle of the consensus maze', 20, 47);
   c.likeLine(13.2, 40, 13.2, 54, 6);
   c.likeLine(15.4, 52.5, 24.6, 52.5, 5);
-  placard(c, 15, 37.3, 'CONSENSUS MAZE\nSTILL VOTING ON\nTHE EXIT', { facing: 2, size: 48 });
+  placard(c, 15, 37.3, 'CONSENSUS MAZE\nSTILL VOTING ON\nTHE EXIT', { facing: 2 });
 
   skatePark(c);
 
@@ -381,7 +397,7 @@ function portlandHeights(c) {
   c.block(12, 76, 12, 5, CURB + 2.2, { roof: 'pitched', ridge: 'x', wall: '#d8b8c8', pitch: 1.2, facade: 'house', base: CURB, door: 'n', lit: 0.7 });
   c.paint(25, 75, 4, 7, 'dirt');
   for (const z of [76, 78.5, 81]) for (const x of [25.7, 27.3]) c.place('shrub', x, z, { scale: 0.6, angle: x * z });
-  placard(c, 27, 74.3, 'THE COMMUNE\nMEETING ABOUT\nTHE MEETING', { facing: 0, size: 50 });
+  placard(c, 27, 74.3, 'THE COMMUNE\nMEETING ABOUT\nTHE MEETING', { facing: 0 });
 
   for (let z = 12; z < 82; z += 7) c.place('pine', 3.5, z + 0.5, { scale: 1.1, angle: z });
 }
@@ -453,9 +469,9 @@ function skatePark(c) {
   c.prop('shop', 58, 77, { w: 9, d: 5, h: CURB + 2.6, text: 'SKATE SHOP · DECKS · WAX · NO AI', bg: '#16161a', fg: '#f2c230' });
 
   c.likeLine(62, 42.5, 68, 42.5, 4).likeLine(39, 44.5, 45, 44.5, 4).likeLine(39, 68, 53, 68, 8).likeLine(55.5, 58.5, 57.5, 58.5, 2).likeLine(37, 55.5, 45, 55.5, 5);
-  placard(c, 40, 37.3, 'THE BOWL\n(DEEP END)', { facing: 2, size: 66, ...DARK });
+  placard(c, 40, 37.3, 'THE BOWL\n(DEEP END)', { facing: 2, ...DARK });
   placard(c, 60, 37.3, 'NO GODS\nNO MASTERS\nNO HELMETS', { facing: 2, ...DARK });
-  placard(c, 51, 82.3, 'SKATEBOARDING\nPROHIBITED\n(SINCE 1977)', { facing: 0, size: 48, ...RED });
+  placard(c, 51, 82.3, 'SKATEBOARDING\nPROHIBITED\n(SINCE 1977)', { facing: 0, ...RED });
   c.place('bench', 68, 48.6, { turn: 2 }).place('bin', 74.2, 66.3);
   lamps(c, [[35.6, 52.3], [55, 49], [63.4, 49], [57.4, 65.6], [63.5, 70.5], [35.6, 65.6], [69.4, 82.4]]);
 }
@@ -468,10 +484,10 @@ function alignmentDistrict(c) {
   c.block(81, 11, 8, 10, CURB + 7.2, { wall: '#a8b4c4', facade: 'office', base: CURB, lit: 0.35 });
   c.block(81, 22, 8, 8, CURB + 6, { wall: '#c87a5a', facade: 'brick', base: CURB, lit: 0.45, door: 's' });
   c.block(91, 11, 7, 19, CURB + 9.9, { wall: '#8a98aa', facade: 'office', base: CURB, lit: 0.3 });
-  screen(c, 98.05, 20.5, CURB + 5.5, 'p(doom)\n97%\n(UPDATED TUESDAY)', { facing: 1, w: 3.2, h: 2, size: 72, ...DARK });
+  screen(c, 98.05, 20.5, CURB + 5.5, 'p(doom)\n97%\n(UPDATED TUESDAY)', { facing: 1, w: 3.2, h: 2, ...DARK });
   c.gpu('Behind the Substack tower', 90, 21);
   c.likeLine(90, 13, 90, 28, 6);
-  placard(c, 100.4, 26, 'THE LONGTERM\nINSTITUTE', { facing: 1, size: 64, ...DARK });
+  placard(c, 100.4, 26, 'THE LONGTERM\nINSTITUTE', { facing: 1, ...DARK });
 
   // The group house's car park: round and up to the roof.
   block(c, 107, 10, 23, 22, 'concrete');
@@ -494,7 +510,7 @@ function alignmentDistrict(c) {
   c.gpu('The group house roof', 117, 21, { y: 4.1 });
   c.likeLine(111, 25, 111, 16, 5).likeLine(114, 14, 120, 14, 4).likeLine(123, 16, 123, 25, 5).likeLine(120, 28, 114, 28, 4);
   for (const [x, z, col, m] of [[114, 17, '#c8382c', 'sedan'], [118, 23, '#2c6ec8', 'hatchback'], [115.5, 24, '#e8e2d6', 'sedan']]) c.place(m, x, z, { paint: col, y: 4.1 });
-  placard(c, 126.5, 22, 'GROUP HOUSE\nPARKING\n(ELEVEN CARS,\nONE BATHROOM)', { facing: 1, size: 42, h: 1.3 });
+  placard(c, 126.5, 22, 'GROUP HOUSE\nPARKING\n(ELEVEN CARS,\nONE BATHROOM)', { facing: 1 });
 
   // The slippery slope: oil all the way up. Take a run at it.
   block(c, 134, 10, 22, 22, 'concrete');
@@ -502,16 +518,16 @@ function alignmentDistrict(c) {
   c.flat(150, 17, 4, 7, CURB + 2.4, { surface: 'concrete', wall: '#9a958a' });
   c.gpu('Top of the slippery slope', 152.5, 20.5, { y: CURB + 2.4 });
   c.likeLine(140, 20.5, 148, 20.5, 4);
-  placard(c, 143, 17.4, 'THE SLIPPERY\nSLOPE', { facing: 2, size: 72, ...DARK });
-  placard(c, 143, 23.6, 'FIRST THEY\nCAME FOR THE\nCHATBOTS', { facing: 0, size: 48 });
+  placard(c, 143, 17.4, 'THE SLIPPERY\nSLOPE', { facing: 2, ...DARK });
+  placard(c, 143, 23.6, 'FIRST THEY\nCAME FOR THE\nCHATBOTS', { facing: 0 });
 
   // The doom clock, and the prediction market round it.
   block(c, 80, 36, 23, 22, 'brick');
   c.block(89, 44, 4, 4, CURB + 9, { wall: '#8a5a48', facade: 'brick', base: CURB, lit: 0.2 });
-  screen(c, 91, 43.95, CURB + 5.4, 'IT IS\n89 SECONDS\nTO MIDNIGHT', { facing: 2, w: 3.6, h: 2.4, bg: '#101014', fg: '#ff4030', size: 80, glow: '#ff6040' });
-  placard(c, 84, 40, 'p(RAIN) = 62%\nBUY', { facing: 0, size: 60 });
-  placard(c, 98, 40, 'WILL THE PAUSE\nHOLD?\nYES 4¢ · NO 96¢', { facing: 0, size: 46 });
-  placard(c, 84, 53, 'p(DOOM)\nSELL', { facing: 2, ...RED, size: 70 });
+  for (const [z, facing] of [[43.95, 2], [48.05, 0]]) screen(c, 91, z, CURB + 5.4, 'IT IS\n89 SECONDS\nTO MIDNIGHT', { facing, w: 3.6, h: 2.4, bg: '#101014', fg: '#ff4030', glow: '#ff6040' });
+  placard(c, 84, 40, 'p(RAIN) = 62%\nBUY', { facing: 0 });
+  placard(c, 98, 40, 'WILL THE PAUSE\nHOLD?\nYES 4¢ · NO 96¢', { facing: 0 });
+  placard(c, 84, 53, 'p(DOOM)\nSELL', { facing: 2, ...RED });
   c.place('bench', 91, 52, { turn: 2 }).place('tree', 98.5, 53).place('tree', 83, 46.5);
   c.likeLine(86, 50, 96, 50, 6);
 
@@ -525,15 +541,15 @@ function alignmentDistrict(c) {
   c.place('bench', 116, 39.6, { turn: 2 }).place('bench', 120, 55).place('bin', 118.2, 39.5, { scale: 0.7 });
   c.whetstone('Alignment Plaza', 126.5, 46.5);
   c.likeLine(109, 46, 112, 46, 2).likeLine(123, 42, 123, 50, 4);
-  placard(c, 117, 37.3, 'WHEN IN\nDOUBT,\nPAUSE.', { facing: 2, ...RED, size: 76 });
-  placard(c, 113.5, 55.2, 'PAPERCLIPS:\nA WARNING', { facing: 0, size: 62 });
+  placard(c, 117, 37.3, 'WHEN IN\nDOUBT,\nPAUSE.', { facing: 2, ...RED });
+  placard(c, 113.5, 55.2, 'PAPERCLIPS:\nA WARNING', { facing: 0 });
 
   // The rally stage: SHUT IT DOWN, and the speakers to say so.
   block(c, 134, 36, 22, 22, 'concrete');
   c.block(140, 39, 11, 5, CURB + 1.0, { surface: 'plank', wall: '#2a2a30', wtex: 'plywood' });
   c.slope(137, 40, 3, 3, CURB, CURB + 1.0, 'x', { surface: 'plank' });
   for (const x of [140.2, 149.6]) wall(c, x, 39.2, x + 1.2, 40.2, CURB + 1.0, CURB + 2.8, '#1c1c20');
-  placard(c, 145.5, 39.6, 'SHUT IT\nDOWN', { facing: 0, size: 90, ...RED, y: CURB + 1.0, w: 2.6, h: 1.4 });
+  placard(c, 145.5, 39.6, 'SHUT IT\nDOWN', { facing: 0, ...RED, y: CURB + 1.0, w: 2.6, h: 1.4 });
   c.likeLine(142, 41.5, 149, 41.5, 4);
   for (let x = 137; x < 154; x += 2.5) c.mark(x, 46, 1.5, 0.12, '#f2c230');
 
@@ -551,15 +567,15 @@ function alignmentDistrict(c) {
   for (const [x, z] of [[82, 76], [86, 79], [96, 71], [82.6, 76.4], [87, 79.3]]) c.place('cone', x, z);
   c.reel(84, 77, { range: 6 });
   c.reel(97, 79, { range: 6 });
-  placard(c, 96, 81.5, 'PAUSE THE CRANE\n(DEMAND #4)', { facing: 0, size: 52, ...RED });
+  placard(c, 96, 81.5, 'PAUSE THE CRANE\n(DEMAND #4)', { facing: 0, ...RED });
 
   // The Effective Altruism Center.
   block(c, 107, 62, 23, 22, 'concrete');
   c.block(109, 64, 10, 10, CURB + 8, { wall: '#c8d0d8', facade: 'office', base: CURB, lit: 0.4 });
   c.block(121, 64, 7, 16, CURB + 5, { wall: '#b08068', facade: 'brick', base: CURB, lit: 0.5, door: 'w' });
-  screen(c, 114, 74.05, CURB + 4.6, 'EXPECTED\nVALUE', { facing: 0, w: 4.4, h: 1.8, size: 92, bg: '#0e3a2a', fg: '#9affb8', glow: '#9affd0' });
-  placard(c, 112, 78, 'EARN TO\nGIVE\n(TO US)', { facing: 0, size: 60 });
-  placard(c, 117, 78, 'MOSQUITO NETS\n(ALL OUT)', { facing: 0, size: 54 });
+  screen(c, 114, 74.05, CURB + 4.6, 'EXPECTED\nVALUE', { facing: 0, w: 4.4, h: 1.8, bg: '#0e3a2a', fg: '#9affb8', glow: '#9affd0' });
+  placard(c, 112, 78, 'EARN TO\nGIVE\n(TO US)', { facing: 0 });
+  placard(c, 117, 78, 'MOSQUITO NETS\n(ALL OUT)', { facing: 0 });
   c.likeLine(109, 76.5, 119, 76.5, 6);
   scatter(c, 'tree', 108, 75, 12, 7, 3, { seed: 17 });
 
@@ -570,7 +586,7 @@ function alignmentDistrict(c) {
   house(c, 136, 75, 7, 6, '#e8d8b8', { door: 's' });
   house(c, 146, 75, 7, 6, '#d8d8e8', { door: 's' });
   c.likeLine(135.5, 72.5, 154.5, 72.5, 8);
-  placard(c, 144.5, 73.2, 'STRONG OPINIONS\nWEAKLY HELD\n(TIGHTLY)', { facing: 0, size: 46 });
+  placard(c, 144.5, 73.2, 'STRONG OPINIONS\nWEAKLY HELD\n(TIGHTLY)', { facing: 0 });
 }
 
 // ——————————————————————————————————————————————————————————— The Ivory Tower
@@ -581,8 +597,8 @@ function ivoryTower(c) {
 
   // The library, closed for training.
   c.block(164, 14, 22, 14, CURB + 6, { wall: '#b8a890', facade: 'brick', base: CURB, door: 's', lit: 0.55 });
-  screen(c, 175, 28.05, CURB + 3.8, 'THE LIBRARY\nCLOSED FOR TRAINING', { facing: 0, w: 5, h: 1.2, size: 64, bg: '#2a2418', fg: '#f4e0b0', glow: '#ffe0a0' });
-  placard(c, 168, 31, 'ALL RIGHTS\nRESERVED\n(SCRAPED)', { facing: 0, size: 52 });
+  screen(c, 175, 28.05, CURB + 3.8, 'THE LIBRARY\nCLOSED FOR TRAINING', { facing: 0, w: 5, h: 1.2, bg: '#2a2418', fg: '#f4e0b0', glow: '#ffe0a0' });
+  placard(c, 188.5, 21, 'ALL RIGHTS\nRESERVED\n(SCRAPED)', { facing: 1 });
 
   // The Ivory Tower: three times round, up to the top, where it's above it all.
   const marble = { surface: 'marble', wall: '#ece6d8' };
@@ -591,14 +607,14 @@ function ivoryTower(c) {
   lap(c, 204, 18, 14, CURB + 6, CURB + 9, marble);
   c.flat(206, 20, 10, 10, CURB + 9, marble);
   c.gpu('Top of the Ivory Tower', 211, 25, { y: CURB + 9 });
-  placard(c, 211, 22.5, 'YOU ARE NOW\nABOVE IT ALL', { facing: 0, size: 54, y: CURB + 9 });
+  placard(c, 211, 22.5, 'YOU ARE NOW\nABOVE IT ALL', { facing: 0, y: CURB + 9 });
   c.likeLine(201, 31, 201, 18, 6).likeLine(203, 15, 217, 15, 6).likeLine(221, 18, 221, 32, 6);
-  placard(c, 197.5, 38.5, 'THE IVORY TOWER\nMIND THE GAP\n(BETWEEN THEORY\nAND PRACTICE)', { facing: 0, size: 40, h: 1.3 });
+  placard(c, 197.5, 38.5, 'THE IVORY TOWER\nMIND THE GAP\n(BETWEEN THEORY\nAND PRACTICE)', { facing: 0 });
 
   // The lecture hall, sunk in the quad.
   bowl(c, 166, 52, 18, 18, CURB, 1.8, 'concrete', 0.25);
   c.gpu('Bottom of the lecture hall', 175, 61);
-  placard(c, 175, 57.5, 'TODAY:\nWHY YOU\nARE WRONG', { facing: 0, size: 58 });
+  placard(c, 175, 57.5, 'TODAY:\nWHY YOU\nARE WRONG', { facing: 0 });
   c.likeLine(169, 61, 181, 61, 6);
 
   // The trolley problem, going round and round.
@@ -607,14 +623,14 @@ function ivoryTower(c) {
   for (const z of [50.6, 51.3, 64.6, 65.3]) c.mark(196.6, z, 18.8, 0.08, rail);
   for (const x of [196.6, 197.3, 214.6, 215.3]) c.mark(x, 50.6, 0.08, 14.8, rail);
   c.gpu('On the trolley tracks', 205.5, 65);
-  placard(c, 206, 57.5, 'TROLLEY PROBLEM\nPULL THE LEVER?', { facing: 0, size: 54 });
-  placard(c, 206, 60.5, '(THE LEVER IS\nA METAPHOR)', { facing: 2, size: 54 });
+  placard(c, 206, 57.5, 'TROLLEY PROBLEM\nPULL THE LEVER?', { facing: 0 });
+  placard(c, 206, 60.5, '(THE LEVER IS\nA METAPHOR)', { facing: 2 });
 
   // The philosophy department, and Bayes Hall.
   c.block(167, 33, 14, 8, CURB + 4.2, { wall: '#c8b098', facade: 'brick', base: CURB, door: 's', lit: 0.5 });
-  screen(c, 174, 41.05, CURB + 2.4, 'PHILOSOPHY\n(NOW HIRING)', { facing: 0, w: 4, h: 1.2, size: 64, bg: '#2a2418', fg: '#f4e0b0' });
+  screen(c, 174, 41.05, CURB + 2.4, 'PHILOSOPHY\n(NOW HIRING)', { facing: 0, w: 4, h: 1.2, bg: '#2a2418', fg: '#f4e0b0' });
   c.block(208, 38, 14, 6, CURB + 3.6, { wall: '#d8dce4', facade: 'office', base: CURB, door: 's', lit: 0.5 });
-  screen(c, 215, 44.05, CURB + 2.0, 'BAYES HALL\n(PROBABLY)', { facing: 0, w: 4.4, h: 1.2, size: 64, bg: '#0a1a3a', fg: '#5ac8ff' });
+  screen(c, 215, 44.05, CURB + 2.0, 'BAYES HALL\n(PROBABLY)', { facing: 0, w: 4.4, h: 1.2, bg: '#0a1a3a', fg: '#5ac8ff' });
 
   // The quad: the statue, the dorms, the trees.
   c.place('statue', 193, 40, { turn: 2 });
@@ -639,7 +655,7 @@ function pauseCompound(c) {
   mesh(10.2, 88.6, 10.4, 163.4);
   c.prop('gate', 40, 89, { w: 4 });
   c.whetstone('Pause Compound Gate', 46.5, 93.5);
-  placard(c, 36, 90.6, 'PAUSE COMPOUND\nHONK IF YOU\'RE\nSCARED', { facing: 2, ...RED, size: 50 });
+  placard(c, 36, 90.6, 'PAUSE COMPOUND\nHONK IF YOU\'RE\nSCARED', { facing: 2, ...RED });
 
   /** A tank: solid as the cylinder it's drawn as, its roof something to stand on. */
   const tank = (cx, cz, r, h, colour = '#e8e4dc', label = null) => {
@@ -671,7 +687,7 @@ function pauseCompound(c) {
     c.flare(62, 116.6 + k * 3.8, { period: 2.8, phase: -k * 0.35, burn: 0.3 });
   }
   c.gpu('End of hot takes alley', 63, 136.5);
-  placard(c, 57.5, 110.6, 'HOT TAKES ALLEY\nDO NOT ENTER', { facing: 2, size: 52, ...DARK });
+  placard(c, 57.5, 110.6, 'HOT TAKES ALLEY\nDO NOT ENTER', { facing: 2, ...DARK });
   for (let k = 0; k < 8; k++) c.mark(60.2 - 0.6, 112.5 + k * 3.1, 0.6, 0.18, '#f2c230');
 
   // The bunker: down the ramp into the sunken yard.
@@ -679,7 +695,7 @@ function pauseCompound(c) {
   c.flat(14, 144, 16, 14, -1.2, { surface: 'concrete' });
   c.block(16, 154, 12, 3, 0.4, { surface: 'grass', wall: '#8a867e', wtex: 'block' });
   c.gpu('Down in the bunker', 26, 150);
-  placard(c, 24.5, 135.4, 'FALLOUT\nSHELTER\n(FOR IDEAS)', { facing: 2, size: 56, ...BLUE });
+  placard(c, 24.5, 135.4, 'FALLOUT\nSHELTER\n(FOR IDEAS)', { facing: 2, ...BLUE });
   c.likeLine(21, 138, 21, 146, 4).likeLine(16, 149, 24, 149, 5);
 
   // Barracks, sandbags, the water tanks, the yard.
@@ -694,9 +710,9 @@ function pauseCompound(c) {
   lamps(c, [20, 38, 56, 70].flatMap((x) => [100.5, 116.5, 132.5, 148.5].map((z) => [x, z])));
 
   // The Prophet's yard.
-  placard(c, 46, 143.2, 'THE END IS\nNIGH\n(AGAIN)', { facing: 2, size: 64 });
-  placard(c, 54, 158.5, 'REPENT\n(YOUR PRIORS)', { facing: 0, size: 60, ...RED });
-  placard(c, 40, 158.5, 'I TOLD YOU SO\n(IN 2003)', { facing: 0, size: 54 });
+  placard(c, 46, 143.2, 'THE END IS\nNIGH\n(AGAIN)', { facing: 2 });
+  placard(c, 54, 158.5, 'REPENT\n(YOUR PRIORS)', { facing: 0, ...RED });
+  placard(c, 40, 158.5, 'I TOLD YOU SO\n(IN 2003)', { facing: 0 });
 }
 
 // ——————————————————————————————————————————————————————————— The Timeline
@@ -714,11 +730,13 @@ function towers(c, x, z, w, d, seed, { skip = [] } = {}) {
     const h = CURB + 5 + Math.round(rnd() * 6);
     c.block(tx, tz, tw, td, h, { wall: colour, facade, base: CURB, lit: 0.3 + rnd() * 0.3, door: i < 2 ? 'n' : 's' });
     // A screen on the face toward the street, now and then.
-    if (rnd() < 0.7) {
+    // (Not on the front left one: every face of it is a street the camera looks away from, or a gap the next tower hides.)
+    if (i > 0 && rnd() < 0.7) {
       const text = SCREENS[Math.floor(rnd() * SCREENS.length)];
       const [bg, fg] = SCREEN_COLOURS[Math.floor(rnd() * SCREEN_COLOURS.length)];
-      const south = i >= 2;
-      screen(c, tx + tw / 2, south ? tz + td + 0.05 : tz - 0.05, CURB + 2.6, text, { facing: south ? 0 : 2, w: Math.min(tw - 1, 5), h: 1.8, size: 76, bg, fg });
+      // On a face that can be seen: the south face of the back two, the east face of the front right one.
+      if (i >= 2) screen(c, tx + tw / 2, tz + td + 0.05, CURB + 2.6, text, { facing: 0, w: Math.min(tw - 1, 5), h: 1.8, bg, fg });
+      else screen(c, tx + tw + 0.05, tz + td / 2, CURB + 2.6, text, { facing: 1, w: Math.min(td - 1, 5), h: 1.8, bg, fg });
     }
   });
 }
@@ -746,7 +764,7 @@ function timeline(c) {
     }
   }
   c.gpu('In the echo chamber', E.x, E.z);
-  placard(c, 91.5, 116, 'THE ECHO CHAMBER\n(YOU\'RE RIGHT)', { facing: 2, size: 48 });
+  placard(c, 91.5, 116, 'THE ECHO CHAMBER\n(YOU\'RE RIGHT)', { facing: 2 });
   c.likeLine(86, 125, 87.5, 125, 2).likeLine(95.5, 125, 97, 125, 2);
 
   // Ratio Square: the screens all round it, the billboard, the crowd.
@@ -758,13 +776,13 @@ function timeline(c) {
   for (const [x, z] of [[110, 117], [126, 117], [110, 133]]) c.place('tree', x, z, { scale: 1.1, angle: x });
   c.place('bench', 115, 117.5, { turn: 2 }).place('bench', 122, 132.5).place('bin', 118.5, 117.4);
   c.likeLine(112, 125, 116, 125, 3).likeLine(121, 125, 125, 125, 3).likeLine(118.5, 119, 118.5, 123, 3);
-  placard(c, 112, 121, 'HAVE YOU\nCONSIDERED\nLOGGING OFF?', { facing: 1, size: 48 });
+  placard(c, 112, 121, 'HAVE YOU\nCONSIDERED\nLOGGING OFF?', { facing: 1 });
 
   // The discourse pit.
   block(c, 134, 114, 22, 22, 'concrete');
   bowl(c, 137, 117, 16, 16, CURB, 2.0, 'concrete', 0.3);
   c.gpu('Bottom of the discourse pit', 145, 125);
-  placard(c, 145, 115.5, 'THE DISCOURSE PIT\n(THERE IS NO\nBOTTOM)', { facing: 2, size: 44, h: 1.3 });
+  placard(c, 145, 115.5, 'THE DISCOURSE PIT\n(THERE IS NO\nBOTTOM)', { facing: 2 });
   c.likeLine(140, 125, 150, 125, 6);
 
   // The infinite scroll: up the ramp, along the walkway in the air, over the street, to the end of it.
@@ -779,7 +797,7 @@ function timeline(c) {
   wall(c, 127.9, 150, 128.1, 152, S, S + 0.6, '#5a6068', 'shiny');
   c.gpu('End of the infinite scroll', 126.8, 151, { y: S });
   c.likeLine(85, 151, 93, 151, 4).likeLine(98, 151, 124, 151, 12, { y: S });
-  placard(c, 82, 147, 'THE INFINITE\nSCROLL\n(KEEP GOING)', { facing: 0, size: 52 });
+  placard(c, 82, 147, 'THE INFINITE\nSCROLL\n(KEEP GOING)', { facing: 0 });
   c.block(83, 154, 9, 7, CURB + 6, { wall: '#7a8898', facade: 'office', base: CURB, lit: 0.35, door: 's' });
   c.block(94, 154, 7, 7, CURB + 8, { wall: '#9aa4b0', facade: 'office', base: CURB, lit: 0.35 });
   c.block(83, 141, 8, 6, CURB + 5, { wall: '#c87a5a', facade: 'brick', base: CURB, lit: 0.45 });
@@ -789,7 +807,7 @@ function timeline(c) {
   c.block(119, 142, 9, 6, CURB + 10, { wall: '#6a7890', facade: 'office', base: CURB, lit: 0.3, door: 'n' });
   c.block(109, 155, 8, 7, CURB + 6, { wall: '#b0a090', facade: 'brick', base: CURB, lit: 0.4, door: 's' });
   c.block(119, 155, 9, 7, CURB + 9, { wall: '#a8b4c4', facade: 'office', base: CURB, lit: 0.3, door: 's' });
-  screen(c, 123.5, 154.95, CURB + 4.2, 'YOU HAVE\nREACHED THE\nEND', { facing: 2, w: 5, h: 2.2, size: 64, bg: '#2a0a1a', fg: '#ff5a8a' });
+  screen(c, 123.5, 148.05, CURB + 4.2, 'YOU HAVE\nREACHED THE\nEND', { facing: 0, w: 5, h: 2.2, bg: '#2a0a1a', fg: '#ff5a8a' });
 
   // The engagement farm: likes, grown in rows. Pick your own.
   block(c, 134, 140, 22, 24, 'dirt');
@@ -799,7 +817,7 @@ function timeline(c) {
   wall(c, 135.4, 149, 142, 149.2, CURB, CURB + 0.7, '#8a6a42', 'matte', 'timber');
   wall(c, 145, 149, 154.6, 149.2, CURB, CURB + 0.7, '#8a6a42', 'matte', 'timber');
   c.gpu('The engagement farm', 153.5, 161.5);
-  placard(c, 140, 145, 'ENGAGEMENT FARM\nPICK YOUR OWN', { facing: 2, size: 52 });
+  placard(c, 140, 145, 'ENGAGEMENT FARM\nPICK YOUR OWN', { facing: 2 });
   c.foe('troll', 102.4, 151, { range: 1.5, notice: 5 });
 }
 
@@ -807,11 +825,11 @@ function timeline(c) {
 
 function hypeValley(c) {
   // The hype cycle, signposted.
-  placard(c, 165, 103, 'TECHNOLOGY\nTRIGGER', { facing: 1, size: 62 });
-  placard(c, 183, 100.5, 'PEAK OF\nINFLATED\nEXPECTATIONS', { facing: 0, size: 46 });
-  placard(c, 201, 99.5, 'TROUGH OF\nDISILLUSIONMENT', { facing: 0, size: 50 });
-  placard(c, 210, 99.5, 'SLOPE OF\nENLIGHTENMENT', { facing: 0, size: 54 });
-  placard(c, 218.5, 101.5, 'PLATEAU OF\nPRODUCTIVITY', { facing: 0, size: 54 });
+  placard(c, 165, 106.5, 'TECHNOLOGY\nTRIGGER', { facing: 1 });
+  placard(c, 183, 100.5, 'PEAK OF\nINFLATED\nEXPECTATIONS', { facing: 0 });
+  placard(c, 201, 99.5, 'TROUGH OF\nDISILLUSIONMENT', { facing: 0 });
+  placard(c, 210, 99.5, 'SLOPE OF\nENLIGHTENMENT', { facing: 0 });
+  placard(c, 218.5, 101.5, 'PLATEAU OF\nPRODUCTIVITY', { facing: 0 });
   c.gpu('Peak of Inflated Expectations', 187, 106);
   c.gpu('Trough of Disillusionment', 201, 106);
   c.gpu('Plateau of Productivity', 219, 112);
@@ -836,7 +854,7 @@ function hypeValley(c) {
   c.block(173, 133, 1, 6, 2.2, { wall: '#d8c8b0', wtex: 'clapboard' });
   c.deck(165.8, 131.8, 8.4, 7.4, 2.5, { colour: '#6a5a4a', roof: true });
   c.gpu('The garage where it all started', 170, 134.5);
-  placard(c, 170, 141.5, 'IN THIS GARAGE\nIN 2015\nWE CHANGED\nEVERYTHING', { facing: 0, size: 40, h: 1.3 });
+  placard(c, 170, 141.5, 'IN THIS GARAGE\nIN 2015\nWE CHANGED\nEVERYTHING', { facing: 0 });
   c.place('junker', 170, 145, { angle: 0.2, fixed: true });
   c.cylinder(170, 145, 0.9, 0, 0.9);
 
@@ -849,7 +867,7 @@ function hypeValley(c) {
   house(c, 163, 151, 8, 7, '#f2ece0', { door: 'n', h: 2.4 });
   house(c, 175, 151, 8, 7, '#e0e8f0', { door: 'n', h: 2.4 });
   c.block(186, 150, 6, 9, 3.4, { wall: '#d8dce4', facade: 'office', base: 0, lit: 0.5 });
-  placard(c, 181, 147.5, 'WE ARE\nSO BACK', { facing: 0, size: 76, ...DARK });
+  placard(c, 181, 147.5, 'WE ARE\nSO BACK', { facing: 0, ...DARK });
 
   // Sand Hill, and the infinity pool on top of it.
   const P = SAND_HILL;
@@ -858,17 +876,17 @@ function hypeValley(c) {
   c.prop('chair', P.x - 4.5, P.z - 1.5).prop('chair', P.x - 4.5, P.z + 1.5);
   c.prop('parasol', P.x + 4.5, P.z, { colour: '#c8182a' });
   c.cylinder(P.x + 4.5, P.z, 0.06, P.h, P.h + 2.2);
-  placard(c, P.x, P.z - 13.5, 'SAND HILL\nPRIVATE\n(YOU CAN\'T AFFORD IT)', { facing: 2, size: 44 });
+  placard(c, P.x, P.z - 13.5, 'SAND HILL\nPRIVATE\n(YOU CAN\'T AFFORD IT)', { facing: 2 });
   c.likeLine(P.x - 11, P.z, P.x - 5, P.z, 4).likeLine(P.x, P.z + 11, P.x, P.z + 5, 4);
 
   // Startup row, at the technology trigger: everyone hiring, nobody saying for what.
   c.block(161, 110, 7, 10, 4.2, { wall: '#e8eaee', facade: 'office', base: 0, lit: 0.7 });
-  screen(c, 168.05, 115, 1.4, 'WE\'RE\nHIRING', { facing: 1, w: 3.4, h: 1.6, size: 84, bg: '#1a2a0a', fg: '#c8ff5a' });
+  screen(c, 168.05, 115, 1.4, 'WE\'RE\nHIRING', { facing: 1, w: 3.4, h: 1.6, bg: '#1a2a0a', fg: '#c8ff5a' });
   c.block(161, 91, 7, 9, 3.4, { wall: '#c8d8e8', facade: 'office', base: 0, lit: 0.7 });
-  screen(c, 168.05, 95.5, 1.0, 'STEALTH\nMODE', { facing: 1, w: 3.4, h: 1.6, size: 84, bg: '#16161a', fg: '#e8e4d8' });
+  screen(c, 168.05, 95.5, 1.0, 'STEALTH\nMODE', { facing: 1, w: 3.4, h: 1.6, bg: '#16161a', fg: '#e8e4d8' });
   // The hacker house.
   house(c, 188, 141, 6, 5, '#e8d8c0', { door: 'n', h: 2.4 });
-  placard(c, 186.5, 139.4, 'HACKER HOUSE\nWE SHIP\n(NOTHING)', { facing: 2, size: 50 });
+  placard(c, 186.5, 139.4, 'HACKER HOUSE\nWE SHIP\n(NOTHING)', { facing: 2 });
 
   c.whetstone('Hype Valley', 165.5, 145.5);
   scatter(c, 'tree', 160, 128, 66, 36, 18, { seed: 31, surfaces: ['grass'], maxH: 3.5 });
@@ -881,16 +899,16 @@ function brussels(c) {
   // The European quarter: the Commission, and the stamping hall.
   block(c, 10, 168, 52, 24, 'marble');
   c.block(13, 170, 18, 9, CURB + 8, { wall: '#d8dce4', facade: 'office', base: CURB, door: 's', lit: 0.4 });
-  screen(c, 22, 179.05, CURB + 5.4, 'DIRECTORATE-GENERAL\nFOR CONSENSUS', { facing: 0, w: 7, h: 1.4, size: 56, ...BLUE });
+  screen(c, 22, 179.05, CURB + 5.4, 'DIRECTORATE-GENERAL\nFOR CONSENSUS', { facing: 0, w: 7, h: 1.4, ...BLUE });
   // The hall: a lane between two walls, the stamps over it, the far end shut. APPROVED, eventually; then back out.
   c.block(30, 185, 26, 1, CURB + 1.4, { wall: '#c8c2b4', wtex: 'stone' });
   c.block(30, 187, 26, 1, CURB + 1.4, { wall: '#c8c2b4', wtex: 'stone' });
   c.block(55, 186, 1, 1, CURB + 1.4, { wall: '#c8c2b4', wtex: 'stone' });
   [34, 38, 42, 46, 50].forEach((x, i) => c.stamp(x, 186, { period: 3.0, phase: i * 0.7 }));
   c.gpu('Through the stamping hall', 53.5, 186.5);
-  placard(c, 28, 183.5, 'THE STAMPING HALL\nAPPROVED · DENIED\n· PENDING', { facing: 2, size: 44, ...BLUE });
-  placard(c, 40, 181, 'AI ACT\nARTICLE 1\nOF 113', { facing: 0, ...BLUE, size: 62 });
-  placard(c, 50, 181, 'FORM 27B\nREQUIRED', { facing: 0, ...BLUE, size: 66 });
+  placard(c, 28, 183.5, 'THE STAMPING HALL\nAPPROVED · DENIED\n· PENDING', { facing: 2, ...BLUE });
+  placard(c, 40, 181, 'AI ACT\nARTICLE 1\nOF 113', { facing: 0, ...BLUE });
+  placard(c, 50, 181, 'FORM 27B\nREQUIRED', { facing: 0, ...BLUE });
   c.likeLine(36, 186.5, 36, 186.5, 1).likeLine(44, 186.5, 44, 186.5, 1).likeLine(52, 186.5, 52, 186.5, 1);
   c.likeLine(14, 182, 28, 182, 7);
   for (const x of [34, 38, 42, 46, 50]) c.mark(x + 0.1, 186.05, 0.8, 0.9, '#c8182a');
@@ -920,8 +938,8 @@ function brussels(c) {
   c.prop('sandbox', 100, 173, { w: 6, d: 5 });
   c.gpu('In the regulatory sandbox', 103, 175.5);
   c.whetstone('Brussels', 96.5, 188.5);
-  placard(c, 110, 186.5, 'GRÈVE\nGÉNÉRALE\n(DAY 4)', { facing: 2, ...RED, size: 70 });
-  placard(c, 114, 176, 'NO\nINNOVATION\nWITHOUT\nCONSULTATION', { facing: 3, size: 42, h: 1.3 });
+  placard(c, 110, 186.5, 'GRÈVE\nGÉNÉRALE\n(DAY 4)', { facing: 2, ...RED });
+  placard(c, 114, 176, 'NO\nINNOVATION\nWITHOUT\nCONSULTATION', { facing: 3 });
 
   // Berghain-sur-Mer, and the queue, which has been there since Thursday.
   c.flat(10, 196, 52, 22, 0, { surface: 'gravel' });
@@ -930,7 +948,7 @@ function brussels(c) {
   wall(c, 30, 199, 52, 199.12, 0, 0.9, '#c8c8cc', 'shiny');
   wall(c, 34, 201.5, 56, 201.62, 0, 0.9, '#c8c8cc', 'shiny');
   c.gpu('Front of the queue', 45, 203.1);
-  placard(c, 28, 197.5, 'QUEUE STARTS\nHERE\n(SINCE THURSDAY)', { facing: 2, ...DARK, size: 52 });
+  placard(c, 28, 197.5, 'QUEUE STARTS\nHERE\n(SINCE THURSDAY)', { facing: 2, ...DARK });
   for (const [x, z, r] of [[14, 200, 0.3], [20, 203, 1.2], [14, 210, 2.1], [22, 212, 0.6]]) {
     c.place('junker', x, z, { angle: r * 1.3, fixed: true });
     c.cylinder(x, z, 0.9, 0, 0.9);
@@ -946,7 +964,7 @@ function brussels(c) {
     for (const z of [198, 211]) c.block(x, z, 5, 5, CURB + 4 + Math.round(rnd() * 2.5), { roof: 'pitched', ridge: 'z', pitch: 1.6, wall: guild[Math.floor(rnd() * guild.length)], wtex: 'haussmann' });
   }
   c.block(78, 206, 3, 2, CURB + 1.6, { wall: '#f2c230', wtex: 'plywood' });
-  placard(c, 79.5, 205.2, 'FRITES\n+21% VAT', { facing: 2, size: 64, ...BLUE });
+  placard(c, 79.5, 207, 'FRITES\n+21% VAT', { facing: 0, ...BLUE, y: CURB + 1.6 });
   c.place('statue', 104.5, 207, { scale: 0.6 });
   c.gpu('The Grand-Place', 92.5, 207);
   c.likeLine(70, 205, 76, 205, 3).likeLine(84, 207, 100, 207, 8);
@@ -972,7 +990,7 @@ function brussels(c) {
     c.cylinder(x, z, 0.06, c.heightAt(x, z), c.heightAt(x, z) + 2.2);
     c.prop('chair', x + 1.4, z + 0.4);
   }
-  placard(c, 40, 224.8, 'LA PLAGE\nBATHING: SEE\nDIRECTIVE 2006/7/EC', { facing: 0, size: 46, ...BLUE });
+  placard(c, 40, 224.8, 'LA PLAGE\nBATHING: SEE\nDIRECTIVE 2006/7/EC', { facing: 0, ...BLUE });
   c.likeLine(10, 223, 86, 223, 20);
 }
 
@@ -988,9 +1006,9 @@ function computeFarm(c) {
   c.block(128, 184, 44, 10, 3.4, { wall: '#c8ccd2', wtex: 'corrugated' });
   c.paint(128, 180, 44, 4, 'grate');
   for (let k = 0; k < 9; k++) c.flare(132 + Math.round(k * 4.4), 181 + (k % 2), { period: 3.2, phase: k * 0.5, burn: 0.25 });
-  screen(c, 150, 169.95, 1.0, 'TRAINING RUN 7\n81% · 3 WEEKS LEFT', { facing: 2, w: 8, h: 1.6, size: 62, bg: '#0a1a3a', fg: '#5ac8ff' });
-  screen(c, 150, 194.05, 1.0, 'PLEASE DO NOT\nUNPLUG', { facing: 0, w: 6, h: 1.6, size: 70, bg: '#2a0a1a', fg: '#ff5a8a' });
-  placard(c, 126, 182, 'HOT AISLE\nKEEP MOVING', { facing: 1, size: 58, ...DARK });
+  screen(c, 150, 180.05, 1.0, 'TRAINING RUN 7\n81% · 3 WEEKS LEFT', { facing: 0, w: 8, h: 1.6, bg: '#0a1a3a', fg: '#5ac8ff' });
+  screen(c, 150, 194.05, 1.0, 'PLEASE DO NOT\nUNPLUG', { facing: 0, w: 6, h: 1.6, bg: '#2a0a1a', fg: '#ff5a8a' });
+  placard(c, 126, 182, 'HOT AISLE\nKEEP MOVING', { facing: 1, ...DARK });
   c.likeLine(130, 182.5, 170, 182.5, 12);
 
   // The cooling towers: the far one has a lift up it.
@@ -1025,7 +1043,7 @@ function computeFarm(c) {
   c.flat(162, 222, 4, 6, 2.4, { surface: 'metal' });
   wall(c, 165.8, 222, 166, 228, 2.4, 3.4, '#c8382c', 'shiny');
   c.gpu('Top of the hockey stick', 164.5, 225, { y: 2.4 });
-  placard(c, 148, 220.6, 'LINE\nGO UP', { facing: 2, ...DARK, size: 90 });
+  placard(c, 148, 220.6, 'LINE\nGO UP', { facing: 2, ...DARK });
   c.likeLine(142, 225, 154, 225, 6);
 
   // The data lake, and the island in the middle of it.
@@ -1034,7 +1052,7 @@ function computeFarm(c) {
   c.flat(198, 217, 4, 1, 0, { surface: 'plank' });
   c.gpu('The data lake island', 203, 217.5);
   c.prop('sign', 196.6, 216, { text: 'DANGER\nDATA LAKE', y: 0 });
-  placard(c, 203, 212.4, 'THE DATA LAKE\nUNFILTERED\nDO NOT DRINK', { facing: 2, size: 48 });
+  placard(c, 203, 212.4, 'THE DATA LAKE\nUNFILTERED\nDO NOT DRINK', { facing: 2 });
 
   // The cable yard: stacks to weave through, and reels that roll after you.
   c.flat(186, 226, 14, 12, 0, { surface: 'concrete' });
@@ -1050,7 +1068,7 @@ function computeFarm(c) {
   const mesh = (x0, z0, x1, z1) => wall(c, x0, z0, x1, z1, 0, 2, '#8a9098', 'matte', 'chainlink');
   mesh(208, 224, 224, 224.2); mesh(208, 238, 224, 238.2); mesh(208, 224.2, 208.2, 229); mesh(208, 233, 208.2, 238); mesh(223.8, 224.2, 224, 238);
   for (const [x, z] of [[212, 227], [218, 227], [212, 233], [218, 233]]) wall(c, x, z, x + 2.2, z + 2.6, 0, 2.2, '#5a6068', 'shiny');
-  placard(c, 206.5, 231, 'DANGER\n400 kV\n(FOR THE CHATBOT)', { facing: 3, size: 52, ...RED });
+  placard(c, 206.5, 231, 'DANGER\n400 kV\n(FOR THE CHATBOT)', { facing: 3, ...RED });
 
   // Yard lamps.
   lamps(c, [[184, 204], [196, 204], [210, 204], [222, 204], [184, 222], [214, 220], [176, 236], [204, 240], [150, 214], [140, 236], [128, 228]]);
@@ -1181,12 +1199,12 @@ function furnish(c) {
   stall(c, 96, 43.5, 'p(AGI)', '#1a3aa0');
   stall(c, 96, 50, 'BETS', '#3a8a4a');
   for (const [x, z] of [[110, 43], [110, 49.5], [126.5, 51.5], [137.5, 54.5], [141.5, 55.5], [152.5, 54.5], [148, 55.5]]) tent(c, x, z, colour(), { peak: rnd() < 0.3 });
-  placard(c, 145, 50.5, 'DAY 365\nOF THE PAUSE\n(STILL HERE)', { facing: 0, size: 50, ...RED });
+  placard(c, 145, 50.5, 'DAY 365\nOF THE PAUSE\n(STILL HERE)', { facing: 0, ...RED });
 
   // The Ivory Tower: the student encampment, the free pizza.
   for (const [x, z] of [[219, 54], [221.5, 58.5], [218.5, 62.5], [222, 67]]) tent(c, x, z, colour());
   stall(c, 188, 60, 'FREE PIZZA (AI TALK)', '#c8382c');
-  placard(c, 219, 50.5, 'STUDENTS FOR\nA PAUSE\n(UNTIL FINALS)', { facing: 0, size: 48 });
+  placard(c, 219, 50.5, 'STUDENTS FOR\nA PAUSE\n(UNTIL FINALS)', { facing: 0 });
 
   // The Pause Compound: the preppers' stash, their camp round the Prophet, the vegetable patch.
   for (const z of [113, 116.5]) container(c, 11.5, z, 6, 2.4, '#5a7a3a');
@@ -1194,7 +1212,7 @@ function furnish(c) {
   for (const [x, z] of [[41.5, 146.5], [55.5, 146.5], [41.5, 153], [56, 152.5]]) tent(c, x, z, '#6a6a4a', { peak: true });
   c.paint(11, 130, 6, 5, 'dirt');
   for (const z of [131, 133.5]) for (let x = 11.6; x < 16.5; x += 1.4) c.place('shrub', x, z, { scale: 0.55, angle: x * z });
-  placard(c, 14, 129, 'BEANS\n(YEAR ONE)', { facing: 2, size: 64 });
+  placard(c, 14, 129, 'BEANS\n(YEAR ONE)', { facing: 2 });
 
   // The Timeline: hot takes, served hot.
   stall(c, 124, 119.5, 'HOT TAKES', '#c8382c');
@@ -1227,7 +1245,7 @@ function furnish(c) {
     tent(c, 249, z, colour(), { r: 1.0, peak: rnd() < 0.4 });
     if (rnd() < 0.5) c.lamp(248.5, z + 3, { colour: '#ff9a3a', reach: 4, height: 0.4, glow: 0.9 });
   }
-  placard(c, 247, 128.6, 'e/acc CAMP\nACCELERATE\n(TOWARD WHAT?)', { facing: 2, size: 48 });
+  placard(c, 247, 128.6, 'e/acc CAMP\nACCELERATE\n(TOWARD WHAT?)', { facing: 2 });
 
   // E-scooters, left in the middle of everything.
   scatter(c, 'scooter', 10, 10, 220, 240, 70, { seed: 91, surfaces: ['concrete', 'brick', 'marble', 'forecourt', 'lawn', 'gravel'], scale: [1, 1] });

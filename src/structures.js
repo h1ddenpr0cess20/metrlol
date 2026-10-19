@@ -101,22 +101,40 @@ function lattice(k, x, y, z, w, top, h, step, colour, t = 0.035) {
   }
 }
 
-/** A canvas of words, as a texture; null where there's no document (the tests). */
-function words(GFX, lines, { w = 512, h = 256, bg = '#f4f1ea', fg = '#1c1b1a', font = '900 120px', accent = null } = {}) {
+const FONT = 'Anton, "Arial Black", Impact, system-ui, sans-serif';
+
+/**
+ * Words on a canvas the shape of the sign they go on (`w` by `h` tiles), as a
+ * texture: the lines centred, and set as big as fits the part of it they go in
+ * (`area`, top and bottom as fractions of its height), never so big a single
+ * line takes more than `cap` of it. `accent` paints over the background first.
+ * Null where there's no document (the tests). The canvas keeps the height the
+ * letters came out, in tiles (`fit`), for checking they can be read.
+ */
+function words(GFX, lines, { w, h, bg = '#f4f1ea', fg = '#1c1b1a', accent = null, area = [0, 1], cap = 0.62 }) {
   if (typeof document === 'undefined') return null;
+  const ppt = Math.min(256, 4096 / w);
+  const W = Math.round(w * ppt), H = Math.max(32, Math.round(h * ppt));
   const c = document.createElement('canvas');
-  c.width = w; c.height = h;
+  c.width = W; c.height = H;
   const ctx = c.getContext('2d');
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
-  if (accent) accent(ctx, w, h);
+  ctx.fillRect(0, 0, W, H);
+  if (accent) accent(ctx, W, H);
+  const list = lines.split('\n');
+  const top = H * area[0], tall = H * (area[1] - area[0]);
+  const margin = Math.min(W, tall) * 0.1;
+  let size = Math.min((tall - margin * 2) / (list.length * 1.08), tall * cap);
+  ctx.font = `400 ${size}px ${FONT}`;
+  const widest = Math.max(...list.map((l) => ctx.measureText(l).width));
+  if (widest > W - margin * 2) size *= (W - margin * 2) / widest;
+  ctx.font = `400 ${size}px ${FONT}`;
   ctx.fillStyle = fg;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const list = lines.split('\n');
-  const size = parseInt(font.split(' ')[1], 10);
-  ctx.font = `${font} Anton, "Arial Black", Impact, system-ui, sans-serif`;
-  list.forEach((line, i) => ctx.fillText(line, w / 2, h / 2 + (i - (list.length - 1) / 2) * size * 1.05));
+  list.forEach((line, i) => ctx.fillText(line, W / 2, top + tall / 2 + (i - (list.length - 1) / 2) * size * 1.08));
+  c.fit = size / ppt;
+  c.text = lines;
   const t = new GFX.CanvasTexture(c);
   t.colorSpace = GFX.SRGBColorSpace;
   t.anisotropy = 8;
@@ -373,6 +391,7 @@ const DRAW = {
 
   sign(k, t, p, y) {
     k.cyl([p.x, y + 0.6, p.z + 0.5], 0.04, 1.2, '#5a6068', { segments: 8 });
+    k.slab(p.x - 0.03, y + 0.84, p.z + 0.08, p.x + 0.03, y + 1.46, p.z + 0.92, '#3a3d44');
   },
 
   /** A column: plain, round, a cap on top. */
@@ -466,11 +485,16 @@ const DRAW = {
   },
 
   /** A freestanding sign on two posts with words on both faces, `w` by `h` tiles, facing `facing` quarter turns (0 is toward +z, 1 toward +x). */
-  placard(k, t, p, y) {
+  placard(k, t, p, y, map) {
     const w = p.w ?? 1.8, h = p.h ?? 1.1, f = ((p.facing ?? 0) % 4 + 4) % 4;
     const along = f % 2 === 0 ? [1, 0] : [0, 1];
     const top = y + 0.5 + h;
-    for (const s of [-1, 1]) k.cyl([p.x + along[0] * s * (w / 2 - 0.1), (y + top) / 2, p.z + along[1] * s * (w / 2 - 0.1)], 0.04, top - y, '#4a3a2a', { segments: 8 });
+    // Each post down to the ground under it, the board level.
+    for (const s of [-1, 1]) {
+      const px = p.x + along[0] * s * (w / 2 - 0.1), pz = p.z + along[1] * s * (w / 2 - 0.1);
+      const foot = Math.min(y, map.heightAt(px, pz) ?? y);
+      k.cyl([px, (foot + top) / 2, pz], 0.04, top - foot, '#4a3a2a', { segments: 8 });
+    }
     const ex = along[0] ? w / 2 : 0.05, ez = along[1] ? w / 2 : 0.05;
     k.slab(p.x - ex, y + 0.5, p.z - ez, p.x + ex, top, p.z + ez, '#3a3d44');
   },
@@ -482,29 +506,36 @@ const DRAW = {
 const WORDS = {
   billboard(GFX, p, y) {
     const tex = words(GFX, p.text ?? 'METRLOL\nRoll on in', {
-      w: 1024, h: 600, bg: '#f4c430', fg: '#1c1b1a', font: `400 ${p.size ?? 170}px`,
+      w: 4.95, h: 2.95, bg: '#f4c430', fg: '#1c1b1a', area: [0, 0.8],
       accent(ctx, w, h) {
         ctx.fillStyle = '#c8382c';
         ctx.fillRect(0, h * 0.8, w, h * 0.2);
+        const tag = p.tag ?? 'NEXT LEFT';
+        let size = h * 0.12;
+        ctx.font = `400 ${size}px ${FONT}`;
+        size *= Math.min(1, (w * 0.92) / ctx.measureText(tag).width);
+        ctx.font = `400 ${size}px ${FONT}`;
         ctx.fillStyle = '#f4f1ea';
-        ctx.font = '400 66px Anton, "Arial Black", Impact, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(p.tag ?? 'NEXT LEFT', w / 2, h * 0.91);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tag, w / 2, h * 0.9);
       },
     });
-    return [sign(GFX, tex, [p.x - 0.15, y + 4.5, p.z], 4.95, 2.95, -Math.PI / 2, 0.75)];
+    // Both faces: the board can be seen coming and going.
+    return [sign(GFX, tex, [p.x - 0.15, y + 4.5, p.z], 4.95, 2.95, -Math.PI / 2, 0.75), sign(GFX, tex, [p.x + 0.07, y + 4.5, p.z], 4.95, 2.95, Math.PI / 2, 0.75)];
   },
   shop(GFX, p) {
-    const tex = words(GFX, p.text ?? 'EURO SHOP · CLOSED (LUNCH)', { w: 1024, h: 120, bg: p.bg ?? '#1a3aa0', fg: p.fg ?? '#f4d020', font: '400 84px' });
-    return [sign(GFX, tex, [p.x + p.w / 2, p.h - 0.3, p.z - 0.04], p.w * 0.94, 0.42, Math.PI, 1)];
+    const tex = words(GFX, p.text ?? 'EURO SHOP · CLOSED (LUNCH)', { w: p.w * 0.94, h: 0.42, bg: p.bg ?? '#1a3aa0', fg: p.fg ?? '#f4d020', cap: 0.7 });
+    // Over the front, and again round the back.
+    return [sign(GFX, tex, [p.x + p.w / 2, p.h - 0.3, p.z - 0.04], p.w * 0.94, 0.42, Math.PI, 1), sign(GFX, tex, [p.x + p.w / 2, p.h - 0.3, p.z + p.d + 0.04], p.w * 0.94, 0.42, 0, 1)];
   },
   sign(GFX, p, y) {
-    const tex = words(GFX, p.text, { w: 256, h: 192, bg: '#f2c230', fg: '#1c1b1a', font: '400 52px' });
-    return [sign(GFX, tex, [p.x - 0.05, y + 1.15, p.z + 0.5], 0.8, 0.6, -Math.PI / 2, 0.5)];
+    const tex = words(GFX, p.text, { w: 0.8, h: 0.6, bg: '#f2c230', fg: '#1c1b1a' });
+    return [sign(GFX, tex, [p.x - 0.05, y + 1.15, p.z + 0.5], 0.8, 0.6, -Math.PI / 2, 0.5), sign(GFX, tex, [p.x + 0.05, y + 1.15, p.z + 0.5], 0.8, 0.6, Math.PI / 2, 0.5)];
   },
   placard(GFX, p, y) {
     const w = p.w ?? 1.8, h = p.h ?? 1.1, f = ((p.facing ?? 0) % 4 + 4) % 4;
-    const tex = words(GFX, p.text, { w: 512, h: Math.round(512 * h / w), bg: p.bg ?? '#f4f0e6', fg: p.fg ?? '#1c1b1a', font: `400 ${p.size ?? 64}px` });
+    const tex = words(GFX, p.text, { w, h, bg: p.bg ?? '#f4f0e6', fg: p.fg ?? '#1c1b1a' });
     const turn = f * Math.PI / 2, n = [Math.sin(turn), Math.cos(turn)];
     const at = y + 0.5 + h / 2;
     return [
@@ -513,26 +544,27 @@ const WORDS = {
     ];
   },
   canopy(GFX, p) {
-    const tex = words(GFX, p.text ?? 'CHARGING  ·  €0.79/kWh  ·  +21% VAT  ·  PLEASE ACCEPT ALL COOKIES', { w: 1536, h: 96, bg: '#1a3aa0', fg: '#f4d020', font: '400 62px' });
+    const tex = words(GFX, p.text ?? 'CHARGING  ·  €0.79/kWh  ·  +21% VAT  ·  PLEASE ACCEPT ALL COOKIES', { w: p.w * 0.96, h: 0.26, bg: '#1a3aa0', fg: '#f4d020', cap: 0.75 });
     return [sign(GFX, tex, [p.x + p.w / 2, p.h + 0.27, p.z + p.d + 0.04], p.w * 0.96, 0.26, 0, 1)];
   },
   stall(GFX, p, y) {
     if (!p.text) return [];
-    const tex = words(GFX, p.text, { w: 512, h: 128, bg: p.colour ?? '#c8382c', fg: '#fff6ee', font: '400 84px' });
+    const tex = words(GFX, p.text, { w: (p.w ?? 2.4) * 0.8, h: 0.4, bg: p.colour ?? '#c8382c', fg: '#fff6ee', cap: 0.7 });
     return [sign(GFX, tex, [p.x, y + 1.55, p.z + (p.d ?? 1.2) / 2 + 0.12], (p.w ?? 2.4) * 0.8, 0.4, 0, 0.85)];
   },
   sandbox(GFX, p, y) {
-    const tex = words(GFX, 'REGULATORY SANDBOX', { w: 512, h: 96, bg: '#1a3aa0', fg: '#f4d020', font: '400 56px' });
-    return [sign(GFX, tex, [p.x - 0.29, y + 2.2, p.z + p.d / 2], 3.2, 0.24, -Math.PI / 2, 1)];
+    const tex = words(GFX, 'REGULATORY SANDBOX', { w: 3.2, h: 0.24, bg: '#1a3aa0', fg: '#f4d020', cap: 0.75 });
+    // Over both ends of the shed.
+    return [sign(GFX, tex, [p.x - 0.29, y + 2.2, p.z + p.d / 2], 3.2, 0.24, -Math.PI / 2, 1), sign(GFX, tex, [p.x + p.w + 0.29, y + 2.2, p.z + p.d / 2], 3.2, 0.24, Math.PI / 2, 1)];
   },
   tank(GFX, p) {
     if (!p.label) return [];
-    const tex = words(GFX, p.label, { w: 768, h: 160, bg: p.colour ?? '#e8e4dc', fg: '#c8382c', font: '400 130px' });
+    const tex = words(GFX, p.label, { w: 3.6, h: 0.75, bg: p.colour ?? '#e8e4dc', fg: '#c8382c', cap: 0.8 });
     return [sign(GFX, tex, [p.x + p.r * 0.71 + 0.03, p.h * 0.4, p.z + p.r * 0.71 + 0.03], 3.6, 0.75, Math.PI / 4, 0.5)];
   },
   screen(GFX, p, y) {
     const f = ((p.facing ?? 0) % 4 + 4) % 4, turn = f * Math.PI / 2;
-    const px = 512, tex = words(GFX, p.text, { w: px, h: Math.round(px * p.h / p.w), bg: p.bg ?? '#1a1a2a', fg: p.fg ?? '#f4f1ea', font: `400 ${p.size ?? 90}px` });
+    const tex = words(GFX, p.text, { w: p.w, h: p.h, bg: p.bg ?? '#1a1a2a', fg: p.fg ?? '#f4f1ea' });
     return [sign(GFX, tex, [p.x + Math.sin(turn) * 0.07, y + p.h / 2, p.z + Math.cos(turn) * 0.07], p.w, p.h, turn, 1)];
   },
 };

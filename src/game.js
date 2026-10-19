@@ -1,3 +1,5 @@
+import { CAST } from './cast/index.js';
+import { materialsOf } from './cast/model.js';
 import { createEffects } from './effects.js';
 import { createPlayer } from './ball.js';
 import { createPickups } from './pickups.js';
@@ -37,6 +39,9 @@ export function createGame({ stage, hud, input, audio, storage }) {
   scene.add(player);
   const xray = createXray(GFX);
   scene.add(xray.sprite);
+  // What the camera saw last frame, for the crowd: only those in it are drawn.
+  const seeing = { at: stage.target, frustum: new GFX.Frustum() };
+  const viewProjection = new GFX.Matrix4();
 
   let saved = storage.load();
   let run = createRun(GFX, { found: saved.found });
@@ -330,7 +335,9 @@ export function createGame({ stage, hud, input, audio, storage }) {
     xray.update(dt, b, stage.camera.position, run.map, player.visible);
     run.traffic.sync(stage.target);
     run.hazards.sync(dt, run.time);
-    run.crowd.sync(dt, run.time);
+    const camera = stage.camera;
+    seeing.frustum.setFromProjectionMatrix(viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    run.crowd.sync(dt, run.time, seeing);
     pickups.sync(dt, run.time);
     effects.update(dt);
     audio.rolling(state === 'play' && b.grounded ? speed : 0, b.grounded);
@@ -370,6 +377,26 @@ export function createGame({ stage, hud, input, audio, storage }) {
   return {
     update,
     start,
+    /** The people the city has in it, by the name of their model, nearest the ball first: the order to bake them in. */
+    cast() {
+      const b = run.ball, nearest = new Map();
+      for (const f of run.crowd.foes) {
+        const d = Math.hypot(f.ball.x - b.x, f.ball.z - b.z);
+        if (!(nearest.get(f.stats.model) <= d)) nearest.set(f.stats.model, d);
+      }
+      return [...nearest].sort((p, q) => p[1] - q[1]).map(([name]) => name);
+    },
+    /**
+     * One of everything that comes into view later than the first frame, to
+     * draw once beforehand (`stage.warm`): a triangle in each of the people's
+     * materials (laid out as their meshes are), and each kind of flying bit.
+     */
+    samples() {
+      const triangle = new GFX.BufferGeometry();
+      for (const name of ['position', 'normal', 'color']) triangle.setAttribute(name, new GFX.BufferAttribute(new Float32Array(9), 3));
+      const people = this.cast().flatMap((name) => materialsOf(GFX, CAST[name]).map((m) => new GFX.Mesh(triangle, m)));
+      return [...people, ...effects.samples()];
+    },
     startOver: () => start({ fresh: true }),
     get state() { return state; },
     get paused() { return paused; },
@@ -416,9 +443,14 @@ function createXray(GFX) {
   sprite.renderOrder = 1000;
   sprite.visible = false;
   let shown = 0;
+  // (A little round each point, for the eaves.)
+  const ROUND = [[0, 0], [0.3, 0.3], [-0.3, 0.3], [0.3, -0.3], [-0.3, -0.3]];
+  // Only the big cylinders (tanks) hide the ball; the map's are fixed, so they are picked out once.
+  let big = [], bigOf = null;
   return {
     sprite,
     update(dt, b, eye, townMap, visible) {
+      if (bigOf !== townMap) { bigOf = townMap; big = townMap.cylinders.filter((c) => c.r > 1.5); }
       // Along the line from the eye to the ball, is anything standing higher than the line?
       let hidden = false;
       const dx = b.x - eye.x, dy = b.y - eye.y, dz = b.z - eye.z;
@@ -426,10 +458,8 @@ function createXray(GFX) {
       for (let d = 0.2; d < far && !hidden; d += 0.25) {
         if (d < b.r * 2.5) continue;
         const x = b.x - dx * (d / far), y = b.y - dy * (d / far), z = b.z - dz * (d / far);
-        // (A little round each point, for the eaves.)
-        const top = Math.max(...[[0, 0], [0.3, 0.3], [-0.3, 0.3], [0.3, -0.3], [-0.3, -0.3]].map(([ox, oz]) => townMap.heightAt(x + ox, z + oz) ?? -Infinity));
-        if (top > y + 0.05) hidden = true;
-        else if (townMap.cylinders.some((c) => c.r > 1.5 && c.y1 > y && Math.hypot(x - c.x, z - c.z) < c.r)) hidden = true;
+        for (const [ox, oz] of ROUND) if ((townMap.heightAt(x + ox, z + oz) ?? -Infinity) > y + 0.05) { hidden = true; break; }
+        if (!hidden) for (const c of big) if (c.y1 > y && Math.hypot(x - c.x, z - c.z) < c.r) { hidden = true; break; }
       }
       shown += ((hidden && visible ? 1 : 0) - shown) * Math.min(1, dt * 10);
       material.opacity = shown;

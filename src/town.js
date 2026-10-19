@@ -535,6 +535,9 @@ function alignmentDistrict(c) {
   block(c, 107, 36, 23, 22, 'brick');
   bowl(c, 114, 42, 8, 8, CURB, 0.7, 'pool', 0);
   c.prop('fountain', 118, 46);
+  // Its basin, and the tier on its column, are stone: rolled round, not through.
+  const font = c.heightAt(118, 46);
+  c.cylinder(118, 46, 0.85, font, font + 0.52).cylinder(118, 46, 0.42, font, font + 1.1);
   c.gpu('In the wishing fountain', 116.4, 46);
   c.place('statue', 110.5, 54.5, { turn: 2 });
   for (const [x, z] of [[111, 40], [125, 40], [125, 53]]) c.place('tree', x, z, { scale: 1.05, angle: x });

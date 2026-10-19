@@ -1,5 +1,5 @@
 import { CAST } from './cast/index.js';
-import { isBaked, ready } from './cast/library.js';
+import { isBaked } from './cast/library.js';
 import { createModel } from './cast/model.js';
 
 /**
@@ -130,8 +130,9 @@ export const KNOCKED_OUT = 1.35;
  * attacks, an attack at a time) and `down` (it is beaten).
  *
  * Each is sculpted and baked in the background as the page loads, and there
- * once its bake is in. Until then — and under node, where nothing bakes — a
- * plain stand-in goes in its place.
+ * is nothing to see of it until its bake is in: no stand-in. `ready` says
+ * whether it is (always, under node, where nothing bakes and nothing is
+ * drawn); `build()` makes its mesh the first time it is wanted, once it is.
  */
 export function createFoeMesh(GFX, kind) {
   const def = FOES[kind];
@@ -139,20 +140,21 @@ export function createFoeMesh(GFX, kind) {
   group.name = kind;
   const body = new GFX.Group();
   group.add(body);
-  let model = null;
-  const stand = standIn(GFX, def);
-  body.add(stand);
-  const attach = () => {
-    model = createModel(GFX, CAST[def.model], { detail: BOARD_DETAIL });
-    body.add(model.group);
-    body.remove(stand);
-  };
-  if (isBaked(def.model, BOARD_DETAIL)) attach();
-  else if (typeof window !== 'undefined') ready(def.model, BOARD_DETAIL).then(attach);
+  let model = null, baked = typeof window === 'undefined';
   const choose = clips();
   return {
     group,
     body,
+    get ready() { return baked || (baked = isBaked(def.model, BOARD_DETAIL)); },
+    get built() { return model !== null; },
+    /** Makes its mesh, if it is baked and isn't made yet; whether it is made. */
+    build() {
+      if (!model && isBaked(def.model, BOARD_DETAIL)) {
+        model = createModel(GFX, CAST[def.model], { detail: BOARD_DETAIL });
+        body.add(model.group);
+      }
+      return model !== null;
+    },
     animate(t, moving, { chasing = false, ...how } = {}) {
       if (!model) return;
       model.pose({ ...choose(t, moving, how), time: t, speed: chasing ? 1 : 0.6 });
@@ -171,18 +173,4 @@ function clips() {
     if (next !== clip) { clip = next; since = t; }
     return { clip, t: t - since };
   };
-}
-
-/** A plain figure for a foe with no model (yet): a capsule and a head. */
-function standIn(GFX, f) {
-  const group = new GFX.Group();
-  const material = new GFX.MeshStandardMaterial({ name: 'standin', color: new GFX.Color('#c8a070'), roughness: 0.7 });
-  const h = f.radius * 2.4;
-  const torso = new GFX.Mesh(new GFX.CylinderGeometry(f.radius * 0.8, f.radius * 0.9, h * 0.7, 12), material);
-  torso.position.y = h * 0.35;
-  const head = new GFX.Mesh(new GFX.SphereGeometry(f.radius * 0.7, 12, 8), material);
-  head.position.y = h * 0.85;
-  torso.castShadow = head.castShadow = true;
-  group.add(torso, head);
-  return group;
 }

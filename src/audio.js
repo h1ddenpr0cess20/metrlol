@@ -1,4 +1,4 @@
-import { createBand, THEMES } from './music.js';
+import { createBand, THEMES } from 'madness-engine/music/band';
 
 /**
  * Every sound, made on the spot with Web Audio — no samples. The rolling is

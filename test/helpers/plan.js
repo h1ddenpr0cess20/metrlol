@@ -1,4 +1,4 @@
-import { SURFACES } from '../../src/surfaces.js';
+import { SURFACES } from 'madness-engine/textures/town/surfaces.metrlol';
 
 /**
  * Finding a way across the town, tile by tile, the way the spikes can go:

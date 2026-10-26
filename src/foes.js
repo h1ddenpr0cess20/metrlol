@@ -1,6 +1,6 @@
 import { CAST } from './cast/index.js';
 import { isBaked } from './cast/library.js';
-import { createModel } from './cast/model.js';
+import { createModel } from 'madness-engine/models/model';
 
 /**
  * Who is in the way. The discourse is out on the streets of Metrlol, and it

@@ -1,4 +1,4 @@
-import { createKit } from './kit.js';
+import { createKit } from 'madness-engine/kit';
 import { model } from './models/library.js';
 import { mergeCopies } from './placed.js';
 

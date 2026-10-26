@@ -126,15 +126,14 @@ it, in new names:
 
 | | |
 |---|---|
-| `src/vendor/gfx/` | Alan's renderer, as in Petroll, unchanged. |
-| `src/mace.js`, `src/morningstar.js`, `src/ball.js` | The ball: Metroll's, untouched. |
-| `src/cast/` | The people (`person.js`, `humanoid.js`, the rig and the skin), their library and bake worker. |
+| [madness-engine](https://github.com/h1ddenpr0cess20/madness-engine) | The engine the game runs on: Alan's renderer, the physics, input, the town view, the sculpting kit, and the library's people, streets, vehicles, surfaces, sky, ball and band. |
+| `src/cast/` | Who is in town (the library's people), their library and bake worker. |
 | `src/foes.js`, `src/crowd.js`, `src/smash.js` | Who is in the way, how they walk and come at the ball, and what a meeting costs. |
 | `src/quips.js` | What the ball says, and the time horizon. |
 | `src/map.js`, `src/town.js` | The map: a grid of tiles, with road paint, props, solids, traffic, hazards, pickups, signs and the crowd on top of them; and Metrlol, part of town by part of town. |
 | `src/structures.js`, `src/models/` | What stands on the map: signs, screens and billboards with words on them, tanks, the mast, the crane, parasols; sculpted street furniture, vehicles, charging posts, rubber stamps, cable reels, whetstones, likes and GPUs. |
 | `src/run.js` | The world as it runs, with nothing drawn: the rules for spikes, smashes, combos, pickups. The game draws it; the tests drive it. |
-| `src/music.js`, `src/audio.js` | Metroll's band, and every sound effect, synthesised. |
+| `src/audio.js` | The band (the library's), and every sound effect, synthesised. |
 
 | Script | |
 |---|---|

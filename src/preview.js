@@ -1,10 +1,10 @@
-import { createPlayer, RADIUS } from './ball.js';
+import { createPlayer, RADIUS } from 'madness-engine/heroes/ball';
 import { CAST } from './cast/index.js';
-import { createModel } from './cast/model.js';
+import { createModel } from 'madness-engine/models/model';
 import { FOES } from './foes.js';
-import { createKit } from './kit.js';
+import { createKit } from 'madness-engine/kit';
 import { MODELS } from './models/index.js';
-import { bake, materialsOf } from './sculpt/bake.js';
+import { bake, materialsOf } from 'madness-engine/models/legacy-bake';
 import { createStage } from './stage.js';
 
 /**

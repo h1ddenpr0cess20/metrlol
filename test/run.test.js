@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { TownMap } from '../src/map.js';
-import { placeBall } from '../src/physics.js';
+import { placeBall } from 'madness-engine/physics';
 import { SPIKES, createRun, putBack, respawn, STEP, stepRun } from '../src/run.js';
 
 /** A little test yard: level ground, a tar pit, a vent, a rubber stamp, a tower to fall off, a road. */

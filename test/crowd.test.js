@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { CAST } from '../src/cast/index.js';
-import { bake, createModel } from '../src/cast/model.js';
+import { bake, createModel } from 'madness-engine/models/model';
 import { FOES } from '../src/foes.js';
 import { TownMap } from '../src/map.js';
-import { placeBall } from '../src/physics.js';
+import { placeBall } from 'madness-engine/physics';
 import { QUIPS, horizon, say } from '../src/quips.js';
 import { COMBO, createRun, respawn, SPIKES, STEP, stepRun } from '../src/run.js';
 import { createTown } from '../src/town.js';

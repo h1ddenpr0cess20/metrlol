@@ -1,14 +1,14 @@
 import { CAST } from './cast/index.js';
-import { materialsOf } from './cast/model.js';
+import { materialsOf } from 'madness-engine/models/model';
 import { createEffects } from './effects.js';
-import { createPlayer } from './ball.js';
+import { createPlayer } from 'madness-engine/heroes/ball';
 import { createPickups } from './pickups.js';
 import { horizon, say } from './quips.js';
-import { rollSpin, turn } from './physics.js';
+import { rollSpin, turn } from 'madness-engine/physics';
 import { createRun, putBack, respawn, SPIKES, STEP, stepRun, toGround } from './run.js';
 import { createWorldMeshes } from './scenery.js';
 import { LAMP_LIGHTS } from './stage.js';
-import { HOME } from './view.js';
+import { HOME } from 'madness-engine/views/town';
 
 /**
  * The game: one city, all of it open from the start. Roll anywhere; find the

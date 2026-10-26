@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { buildMap, isFlat } from '../src/map.js';
 import { drawStructures, STRUCTURES } from '../src/structures.js';
-import { SURFACES } from '../src/surfaces.js';
-import { placeBall } from '../src/physics.js';
+import { SURFACES } from 'madness-engine/textures/town/surfaces.metrlol';
+import { placeBall } from 'madness-engine/physics';
 import { createRun, STEP, stepRun } from '../src/run.js';
 import { createTown, SIZE } from '../src/town.js';
-import { HOME } from '../src/view.js';
+import { HOME } from 'madness-engine/views/town';
 
 const town = createTown();
 const inside = (s, x, y, z, r = 0) => x > s.min[0] - r && x < s.max[0] + r && y > s.min[1] - r && y < s.max[1] + r && z > s.min[2] - r && z < s.max[2] + r;

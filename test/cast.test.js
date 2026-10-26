@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { CAST } from '../src/cast/index.js';
-import { bake, createModel } from '../src/cast/model.js';
+import { bake, createModel } from 'madness-engine/models/model';
 import { BOARD_DETAIL, FOES } from '../src/foes.js';
 
 test('everybody in the cast is somebody, and everybody bakes within budget and moves', () => {

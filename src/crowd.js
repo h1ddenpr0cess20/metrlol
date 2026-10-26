@@ -1,5 +1,5 @@
 import { createFoeMesh, FOES, KNOCKED_OUT } from './foes.js';
-import { collideBalls, createBall, placeBall, PUSH, stepBall } from './physics.js';
+import { collideBalls, createBall, placeBall, PUSH, stepBall } from 'madness-engine/physics';
 import { closingSpeed, resolveImpact } from './smash.js';
 
 /**

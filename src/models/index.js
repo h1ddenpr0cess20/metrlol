@@ -1,7 +1,7 @@
-import { CIVIC } from './civic.js';
-import { DISCOURSE } from './discourse.js';
-import { STREET } from './street.js';
-import { VEHICLES } from './vehicles.js';
+import { CIVIC } from 'madness-engine/scenery/civic';
+import { DISCOURSE } from 'madness-engine/scenery/discourse';
+import { STREET } from 'madness-engine/scenery/street.metrlol';
+import { VEHICLES } from 'madness-engine/scenery/vehicles.metrlol';
 
 /** How much coarser than sculpted a model is meshed, by name: the seeds, a couple of hundred of them and tiny on screen. */
 const COARSE = { like: 1.8 };

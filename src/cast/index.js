@@ -1,10 +1,8 @@
-import agent from 'madness-engine/characters/agent';
 import alien from 'madness-engine/characters/alien';
-import archaeologist from 'madness-engine/characters/archaeologist.metrlol';
+import archaeologist from 'madness-engine/characters/archaeologist';
 import beerguy from 'madness-engine/characters/beerguy';
-import blackcat from 'madness-engine/characters/blackcat';
 import blader from 'madness-engine/characters/blader';
-import cabbie from 'madness-engine/characters/cabbie.metrlol';
+import cabbie from 'madness-engine/characters/cabbie';
 import clubber from 'madness-engine/characters/clubber';
 import cop from 'madness-engine/characters/cop';
 import corgi from 'madness-engine/characters/corgi';
@@ -23,23 +21,23 @@ import floridaman from 'madness-engine/characters/floridaman';
 import folkie from 'madness-engine/characters/folkie';
 import foreman from 'madness-engine/characters/foreman';
 import gatekeeper from 'madness-engine/characters/gatekeeper';
-import gent from 'madness-engine/characters/gent.metrlol';
+import gent from 'madness-engine/characters/gent';
 import goth from 'madness-engine/characters/goth';
 import hippie from 'madness-engine/characters/hippie';
 import hipster from 'madness-engine/characters/hipster';
-import hotdog from 'madness-engine/characters/hotdog.metrlol';
+import hotdog from 'madness-engine/characters/hotdog';
 import hxckid from 'madness-engine/characters/hxckid';
-import influencer from 'madness-engine/characters/influencer.metrlol';
+import influencer from 'madness-engine/characters/influencer';
 import knight from 'madness-engine/characters/knight';
 import lifeguard from 'madness-engine/characters/lifeguard';
-import mascot from 'madness-engine/characters/mascot.metrlol';
+import mascot from 'madness-engine/characters/mascot';
 import medic from 'madness-engine/characters/medic';
 import mime from 'madness-engine/characters/mime';
 import mogul from 'madness-engine/characters/mogul';
 import mourner from 'madness-engine/characters/mourner';
 import neighbour from 'madness-engine/characters/neighbour';
 import newsie from 'madness-engine/characters/newsie';
-import nonna from 'madness-engine/characters/nonna.metrlol';
+import nonna from 'madness-engine/characters/nonna';
 import nuguy from 'madness-engine/characters/nuguy';
 import pallbearer from 'madness-engine/characters/pallbearer';
 import paparazzo from 'madness-engine/characters/paparazzo';
@@ -53,17 +51,17 @@ import purist from 'madness-engine/characters/purist';
 import rat from 'madness-engine/characters/rat';
 import raver from 'madness-engine/characters/raver';
 import roadie from 'madness-engine/characters/roadie';
-import robot from 'madness-engine/characters/robot.metroll';
+import robot from 'madness-engine/characters/robot';
 import runner from 'madness-engine/characters/runner';
 import scenekid from 'madness-engine/characters/scenekid';
-import security from 'madness-engine/characters/security.metroll';
+import security from 'madness-engine/characters/security';
 import skater from 'madness-engine/characters/skater';
 import soundguy from 'madness-engine/characters/soundguy';
 import stoner from 'madness-engine/characters/stoner';
 import streetteam from 'madness-engine/characters/streetteam';
 import suit from 'madness-engine/characters/suit';
 import surfer from 'madness-engine/characters/surfer';
-import tourist from 'madness-engine/characters/tourist.metrlol';
+import tourist from 'madness-engine/characters/tourist';
 import troll from 'madness-engine/characters/troll';
 import waiter from 'madness-engine/characters/waiter';
 import welder from 'madness-engine/characters/welder';
@@ -71,10 +69,14 @@ import wizard from 'madness-engine/characters/wizard';
 import yeti from 'madness-engine/characters/yeti';
 import zinekid from 'madness-engine/characters/zinekid';
 import zombie from 'madness-engine/characters/zombie';
+import { CAT_DEFS } from 'madness-engine/characters/cat';
+
+/** The black cat: Catroller's, at the size of a cat on these boards. */
+const blackcat = { ...CAT_DEFS['cat-black'], scale: 0.8 };
 
 /** Everyone sculpted, by name (see foes.js for who they are and what they are called here). */
 export const CAST = {
-  agent, alien, archaeologist, beerguy, blackcat, blader, cabbie, clubber, cop, corgi, coroner, cowboy,
+  alien, archaeologist, beerguy, blackcat, blader, cabbie, clubber, cop, corgi, coroner, cowboy,
   critic, cultist, cyclist, dj, doomlord, drunk, emo, engineer, eurocrat, floridaman, folkie, foreman,
   gatekeeper, gent, goth, hippie, hipster, hotdog, hxckid, influencer, knight, lifeguard, mascot, medic,
   mime, mogul, mourner, neighbour, newsie, nonna, nuguy, pallbearer, paparazzo, pauser, phone, poet, poser,

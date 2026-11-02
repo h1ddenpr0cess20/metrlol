@@ -17,7 +17,7 @@ import { WebGLBackend } from 'madness-engine/gfx/webgl';
 import { WebGPUBackend } from 'madness-engine/gfx/webgpu';
 import { createView } from 'madness-engine/views/town';
 import { paintRoom } from 'madness-engine/textures/rooms/town';
-import { paintSky } from 'madness-engine/textures/skies/town.metrlol';
+import { paintSky } from 'madness-engine/textures/skies/town';
 
 /** How far back the camera sits at zoom 1, and its lens. Where round the marble it is, is the view's (`view.js`). */
 export const LENS = Object.freeze({ distance: 10, fov: 36 });
@@ -113,7 +113,7 @@ export async function createStage(host) {
 
   // Opaque all round: the glass refracts whatever is behind it, and over
   // nothing at all it would bend the renderer's stand-in grey.
-  const sky = paintSky(domeU);
+  const sky = paintSky(domeU, { on: 'city' });
   const skyMap = sky ? new GFX.CanvasTexture(sky) : null;
   if (skyMap) skyMap.colorSpace = GFX.SRGBColorSpace;
   const backdrop = new GFX.Mesh(

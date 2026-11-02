@@ -1,10 +1,10 @@
-import { RADIUS } from 'madness-engine/heroes/ball';
+import { RADIUS } from 'madness-engine/heroes/mace';
 import { SLOWEST } from './breakables.js';
 import { createCrowd } from './crowd.js';
 import { createHazards } from './hazards.js';
 import { buildMap, DEPTH } from './map.js';
 import { BREAK_SPEED, createBall, placeBall, PUSH, stepBall, TOP_SPEED } from 'madness-engine/physics';
-import { surfaceOf } from 'madness-engine/textures/town/surfaces.metrlol';
+import { surfaceOf } from 'madness-engine/textures/town/surfaces';
 import { createTown } from './town.js';
 import { createTraffic } from './traffic.js';
 import { groundAxes } from 'madness-engine/views/town';

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import * as GFX from 'madness-engine/gfx';
 import { buildMap, isFlat } from '../src/map.js';
 import { drawStructures, STRUCTURES } from '../src/structures.js';
-import { SURFACES } from 'madness-engine/textures/town/surfaces.metrlol';
+import { SURFACES } from 'madness-engine/textures/town/surfaces';
 import { placeBall } from 'madness-engine/physics';
 import { createRun, STEP, stepRun } from '../src/run.js';
 import { createTown, SIZE } from '../src/town.js';

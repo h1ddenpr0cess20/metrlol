@@ -2,7 +2,7 @@ import { World } from 'madness-engine/physics';
 import { MODELS } from './models/index.js';
 import { BREAKABLE } from './breakables.js';
 import { FACADES } from 'madness-engine/textures/town/paint';
-import { surfaceOf } from 'madness-engine/textures/town/surfaces.metrlol';
+import { surfaceOf } from 'madness-engine/textures/town/surfaces';
 import { linearRGB } from 'madness-engine/color';
 
 /**

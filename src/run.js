@@ -1,4 +1,4 @@
-import { RADIUS } from 'madness-engine/heroes/ball';
+import { RADIUS } from 'madness-engine/heroes/mace';
 import { SLOWEST } from './breakables.js';
 import { createCrowd } from './crowd.js';
 import { createHazards } from './hazards.js';

@@ -1,4 +1,4 @@
-import { createPlayer, RADIUS } from 'madness-engine/heroes/ball';
+import { createPlayer, RADIUS } from 'madness-engine/heroes/mace';
 import { CAST } from './cast/index.js';
 import { createModel } from 'madness-engine/models/model';
 import { FOES } from './foes.js';

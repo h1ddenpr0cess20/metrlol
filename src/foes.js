@@ -86,7 +86,7 @@ export const FOES = Object.freeze({
   hottakes: { model: 'hotdog', name: 'Hot Take Vendor', blurb: 'Hot takes! Get your hot takes! Mustard, outrage, or both?', toughness: 5, power: 5, hype: 70, radius: 0.42, speed: 2.8, shout: 'HOT TAKES! GET \'EM HOT!' },
   // Hype Valley.
   founder: { model: 'suit', name: 'Founder', blurb: 'Raising a seed round at a ten-billion valuation. Pre-revenue. Pre-product. Pre-idea.', toughness: 6, power: 6, hype: 90, radius: 0.37, speed: 3.2, shout: 'WE\'RE RAISING!' },
-  recruiter: { model: 'agent', name: 'Recruiter', blurb: 'Has an exciting opportunity for you. It is a ninety-hour week. There is equity.', toughness: 6, power: 6, hype: 80, radius: 0.37, speed: 3.2, shout: 'ARE YOU OPEN TO WORK?' },
+  recruiter: { model: 'suit', name: 'Recruiter', blurb: 'Has an exciting opportunity for you. It is a ninety-hour week. There is equity.', toughness: 6, power: 6, hype: 80, radius: 0.37, speed: 3.2, shout: 'ARE YOU OPEN TO WORK?' },
   cryptobro: { model: 'floridaman', name: 'Crypto Bro', blurb: 'Pivoted to AI from NFTs, from crypto, from a timeshare. Has a mullet from each.', toughness: 5, power: 5, hype: 70, radius: 0.4, speed: 3.4, shout: 'WAGMI!' },
   biohacker: { model: 'runner', name: 'Biohacker', blurb: 'Runs a marathon a day to live for ever. Takes a hundred and twelve supplements. Has a newspaper to hit you with.', toughness: 4, power: 4, hype: 60, radius: 0.36, speed: 5.4, shout: 'DON\'T DIE!' },
   corgi: { model: 'corgi', name: 'The VC\'s Corgi', blurb: 'Has a board seat. Has the same voting rights as you. Low, fast, unimpressed.', toughness: 3, power: 3, hype: 50, radius: 0.32, speed: 3.6, shout: 'WOOF. (TERM SHEET.)' },

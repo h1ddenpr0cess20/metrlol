@@ -1,7 +1,7 @@
 import { CAST } from './cast/index.js';
 import { materialsOf } from 'madness-engine/models/model';
 import { createEffects } from './effects.js';
-import { createPlayer } from 'madness-engine/heroes/ball';
+import { createPlayer } from 'madness-engine/heroes/mace';
 import { createPickups } from './pickups.js';
 import { horizon, say } from './quips.js';
 import { rollSpin, turn } from 'madness-engine/physics';

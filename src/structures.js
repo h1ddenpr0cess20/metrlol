@@ -1,6 +1,6 @@
 import { createKit } from 'madness-engine/kit';
 import { linearRGB } from 'madness-engine/color';
-import { wallMaterial } from 'madness-engine/textures/town/textures.metrlol';
+import { wallMaterial } from 'madness-engine/textures/town/textures';
 
 /**
  * The city's bigger things — tanks and cooling towers, the mast, the crane,

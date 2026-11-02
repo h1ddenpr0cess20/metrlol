@@ -1,4 +1,4 @@
-import { SURFACES } from 'madness-engine/textures/town/surfaces.metrlol';
+import { SURFACES } from 'madness-engine/textures/town/surfaces';
 import { groundAxes } from 'madness-engine/views/town';
 
 /**

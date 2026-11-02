@@ -3,7 +3,7 @@ import { linearRGB } from 'madness-engine/color';
 import { createBuildings } from './buildings.js';
 import { createPlaced } from './placed.js';
 import { drawStructures, seams } from './structures.js';
-import { surfaceMaterial, wallMaterial } from 'madness-engine/textures/town/textures.metrlol';
+import { surfaceMaterial, wallMaterial } from 'madness-engine/textures/town/textures';
 
 /**
  * The world as it is drawn: the tiles (a mesh per surface for each square

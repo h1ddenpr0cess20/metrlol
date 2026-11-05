@@ -50,7 +50,6 @@ function coinTemplatesFor(GFX) {
       logo: COIN_LOGO,
       metal,
       year: '2026',
-      motto: 'METRLOL',
     });
     const sourceGeometries = new Set();
     const parts = coin.spin.children.map((part) => {

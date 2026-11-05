@@ -177,9 +177,14 @@ export function createAudio() {
       tone({ freq: 110, to: 60, length: 0.3, gain: 0.35 });
     },
 
-    /** A like: a little pluck, higher for each one in a row. */
-    like(run = 0) {
-      tone({ freq: NOTE(79 + ([0, 2, 4, 7, 9, 12][run % 6])), length: 0.12, type: 'triangle', gain: 0.16 });
+    /** A coin pickup: a sharp metallic strike with a bright, decaying ring. */
+    coin(run = 0) {
+      const freq = NOTE(84 + ([0, 2, 4, 7, 9, 12][run % 6]));
+      tone({ freq, length: 0.52, type: 'sine', gain: 0.14, attack: 0.002 });
+      tone({ at: 0.003, freq: freq * 2.01, length: 0.36, type: 'sine', gain: 0.06, attack: 0.002 });
+      tone({ at: 0.008, freq: freq * 2.74, length: 0.22, type: 'sine', gain: 0.035, attack: 0.002 });
+      tone({ at: 0.026, freq: freq * 1.498, length: 0.38, type: 'sine', gain: 0.045, attack: 0.003 });
+      burst({ length: 0.025, type: 'highpass', freq: 4600, q: 0.8, gain: 0.035 });
     },
 
     /** A golden GPU. */

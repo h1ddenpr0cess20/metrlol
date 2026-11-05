@@ -52,8 +52,10 @@ function coinTemplatesFor(GFX) {
       year: '2026',
       motto: 'METRLOL',
     });
+    const sourceGeometries = new Set();
     const parts = coin.spin.children.map((part) => {
       part.updateMatrix();
+      sourceGeometries.add(part.geometry);
       return {
         geometry: transformedGeometry(GFX, part.geometry, part.matrix),
         material: part.material,
@@ -61,6 +63,9 @@ function coinTemplatesFor(GFX) {
         receiveShadow: part.receiveShadow,
       };
     });
+    // The baked copies are now the cached templates; release the temporary
+    // geometry allocated by createCoin rather than keeping both sets alive.
+    for (const geometry of sourceGeometries) geometry.dispose();
     return [metal, parts];
   }));
 

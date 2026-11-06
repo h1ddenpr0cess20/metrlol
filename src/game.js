@@ -208,7 +208,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
       likesGot++;
       pickups.eaten(s);
       effects.chaff(s.x, s.y, s.z);
-      audio.like(streak++);
+      audio.coin(streak++);
       streakTimer = 0.6;
       hud.likes(likesGot);
     }

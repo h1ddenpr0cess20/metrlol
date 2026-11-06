@@ -121,10 +121,12 @@ function clothingLook(definition, outfit) {
 // Four stable looks per human: original plus three seeded skin/eye/hair and clothing combinations.
 const VARIANT_DEFS = {};
 const APPEARANCE_VARIANTS = {};
+const APPEARANCE_PALETTES = {};
 for (const [name, definition] of Object.entries(BASE_CAST)) {
   const variants = [name];
   if (typeof definition.variant === 'function' && typeof definition.palette === 'function') {
     const original = definition.palette();
+    APPEARANCE_PALETTES[name] = Object.freeze({ skin: original.skin, eyes: original.eyes, hair: original.hair, look: original.look });
     const used = {
       skin: new Set([original.skin]),
       eyes: new Set([original.eyes]),
@@ -141,11 +143,13 @@ for (const [name, definition] of Object.entries(BASE_CAST)) {
       used.eyes.add(colors.eyes);
       if (original.hair !== null) used.hair.add(colors.hair);
       const outfit = OUTFITS[(hashSeed(name + ':outfit') + index - 1) % OUTFITS.length];
+      const look = clothingLook(definition, outfit);
       VARIANT_DEFS[variantName] = definition.variant({
         ...colors,
-        look: clothingLook(definition, outfit),
+        look,
         name: (definition.name ?? name) + '-appearance-' + index,
       });
+      APPEARANCE_PALETTES[variantName] = Object.freeze({ skin: colors.skin, eyes: colors.eyes, hair: colors.hair, look });
       variants.push(variantName);
     }
   }
@@ -162,4 +166,10 @@ export function appearanceModelFor(model, seed = 0) {
   const variants = appearanceVariantsFor(model);
   const index = (Math.trunc(Number(seed) || 0) >>> 0) % variants.length;
   return variants[index];
+}
+
+
+/** The actual seeded colours supplied to a cast variant (including recoloured hair). */
+export function appearancePaletteFor(model) {
+  return APPEARANCE_PALETTES[model] ?? null;
 }

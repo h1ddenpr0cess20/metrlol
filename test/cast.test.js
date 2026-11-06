@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import * as GFX from 'madness-engine/gfx';
-import { appearanceModelFor, appearanceVariantsFor, BASE_CAST, CAST } from '../src/cast/index.js';
+import { appearanceModelFor, appearancePaletteFor, appearanceVariantsFor, BASE_CAST, CAST } from '../src/cast/index.js';
 import { bake, createModel } from 'madness-engine/models/model';
 import { BOARD_DETAIL, FOES } from '../src/foes.js';
 
@@ -24,8 +24,7 @@ test('the refreshed roles use the newer character assets that fit them', () => {
   assert.equal(FOES.recruiter.model, 'officewoman');
   assert.equal(FOES.dpo.model, 'officeguy');
   assert.equal(FOES.doorman.model, 'bouncer');
-  assert.equal(FOES.newsletter, undefined, 'the public foe key remains newsletter');
-  assert.equal(FOES.newsletter.model, 'mailcarrier');
+  assert.equal(FOES.newsletter.model, 'mailcarrier', 'the public foe key remains newsletter');
 });
 
 
@@ -38,7 +37,7 @@ test('human cast members have seeded skin, eye, hair and clothing appearances', 
     assert.equal(names[0], name);
     const palettes = names.map((variant) => {
       assert.ok(CAST[variant], variant + ' is registered for the bake worker');
-      return CAST[variant].palette();
+      return appearancePaletteFor(variant);
     });
     assert.ok(new Set(palettes.map((p) => p.skin)).size > 1, name + ' skin tones vary');
     assert.ok(new Set(palettes.map((p) => p.eyes)).size > 1, name + ' eye colours vary');

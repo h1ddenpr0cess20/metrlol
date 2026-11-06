@@ -124,12 +124,25 @@ const APPEARANCE_VARIANTS = {};
 for (const [name, definition] of Object.entries(BASE_CAST)) {
   const variants = [name];
   if (typeof definition.variant === 'function' && typeof definition.palette === 'function') {
+    const original = definition.palette();
+    const used = {
+      skin: new Set([original.skin]),
+      eyes: new Set([original.eyes]),
+      hair: new Set(original.hair === null ? [] : [original.hair]),
+    };
     for (let index = 1; index < 4; index++) {
       const variantName = name + '__appearance_' + index;
-      const seed = hashSeed(name + ':person:' + index);
-      const outfit = OUTFITS[hashSeed(name + ':outfit:' + index) % OUTFITS.length];
+      let colors;
+      for (let attempt = 0; attempt < 128; attempt++) {
+        colors = diverse(hashSeed(name + ':person:' + index) + attempt * 7919);
+        if (!used.skin.has(colors.skin) && !used.eyes.has(colors.eyes) && (original.hair === null || !used.hair.has(colors.hair))) break;
+      }
+      used.skin.add(colors.skin);
+      used.eyes.add(colors.eyes);
+      if (original.hair !== null) used.hair.add(colors.hair);
+      const outfit = OUTFITS[(hashSeed(name + ':outfit') + index - 1) % OUTFITS.length];
       VARIANT_DEFS[variantName] = definition.variant({
-        ...diverse(seed),
+        ...colors,
         look: clothingLook(definition, outfit),
         name: (definition.name ?? name) + '-appearance-' + index,
       });

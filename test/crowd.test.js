@@ -197,3 +197,16 @@ test('the crowd is never scattered over the start or a whetstone', () => {
   const spots = [[town.start.x + 0.5, town.start.z + 0.5], ...town.stones.map((s) => [s.x, s.z])];
   for (const f of town.foes) for (const [x, z] of spots) assert.ok(Math.hypot(f.x - x, f.z - z) > 2.2, `${f.kind} at ${f.x.toFixed(1)},${f.z.toFixed(1)}`);
 });
+
+
+test('repeated human roles receive stable but varied baked appearances', () => {
+  const map = yard(
+    ['pauser', 18.5, 10.5], ['pauser', 24.5, 10.5], ['pauser', 30.5, 10.5],
+    ['pauser', 36.5, 10.5], ['pauser', 42.5, 10.5], ['pauser', 48.5, 10.5],
+  );
+  const first = createRun(GFX, { map }).crowd.foes.map((foe) => foe.look.modelName);
+  const second = createRun(GFX, { map }).crowd.foes.map((foe) => foe.look.modelName);
+  assert.deepEqual(first, second, 'the same map placements select the same looks');
+  assert.ok(first.every((name) => CAST[name]), 'every selected look is in the bake registry');
+  assert.ok(new Set(first).size > 1, 'the same role appears with different appearance presets');
+});

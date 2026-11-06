@@ -230,3 +230,12 @@ test('the signs can be seen from where the camera is: nothing stands between it 
     assert.ok(bad / views <= 0.25, `"${p.text}" is hidden in ${bad} of ${views} views`);
   }
 });
+
+
+test('a crossing guard stands beside the Portland Heights zebra crossing', () => {
+  const guard = town.foes.find((foe) => foe.kind === 'crossingguard');
+  assert.ok(guard, 'crossing guard is placed in the town');
+  assert.equal(town.districtAt(guard.x, guard.z).name, 'Portland Heights');
+  assert.notEqual(town.heightAt(guard.x, guard.z), null);
+  assert.ok(Math.abs(guard.x - 34.2) < 0.01 && Math.abs(guard.z - 63.2) < 0.01);
+});

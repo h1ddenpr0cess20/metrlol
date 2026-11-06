@@ -1,4 +1,4 @@
-import { CAST } from './cast/index.js';
+import { appearanceModelFor, CAST } from './cast/index.js';
 import { isBaked } from './cast/library.js';
 import { createModel } from 'madness-engine/models/model';
 
@@ -46,7 +46,7 @@ export const FOES = Object.freeze({
   striker: { model: 'foreman', name: 'Striker', blurb: 'Knows exactly how long they have been on strike. It is a long weekend.', toughness: 6, power: 6, hype: 90, radius: 0.4, speed: 2.8, shout: 'GRÈVE!' },
   commuter: { model: 'blader', name: 'Scooter Commuter', blurb: 'Has right of way. The bike lane is wherever you are standing.', toughness: 5, power: 5, hype: 70, radius: 0.4, speed: 5.0, shout: 'DING DING!' },
   raver: { model: 'raver', name: 'Berlin Raver', blurb: 'Dancing since Friday. It is Monday. Does not intend to be told.', toughness: 3, power: 3, hype: 50, radius: 0.35, speed: 4.2, shout: 'ES IST MONTAG?!' },
-  doorman: { model: 'clubber', name: 'Berghain Doorman', blurb: 'Your name is not on the list. Nobody\'s is. The policy is no.', toughness: 9, power: 9, hype: 150, radius: 0.5, speed: 2.4, shout: 'NEIN.' },
+  doorman: { model: 'bouncer', name: 'Berghain Doorman', blurb: 'Your name is not on the list. Nobody\'s is. The policy is no.', toughness: 9, power: 9, hype: 150, radius: 0.5, speed: 2.4, shout: 'NEIN.' },
   // The feed.
   replyguy: { model: 'critic', name: 'Reply Guy', blurb: 'Has not read it. Replies "actually" anyway. Has done so eleven thousand times.', toughness: 4, power: 4, hype: 60, radius: 0.35, speed: 3.6, shout: 'ACTUALLY—' },
   substacker: { model: 'zinekid', name: 'Substack Writer', blurb: 'Eleven thousand words on why you are wrong. Paywall after the first paragraph.', toughness: 4, power: 3, hype: 50, radius: 0.34, speed: 3.6, shout: 'SUBSCRIBE!' },
@@ -63,6 +63,7 @@ export const FOES = Object.freeze({
   dropout: { model: 'skater', name: 'Dropout Founder', blurb: 'Left school at nineteen to build an AI wrapper. It is a wrapper. Has a board, and a board of advisors.', toughness: 4, power: 5, hype: 60, radius: 0.38, speed: 5.0, shout: 'IT\'S UBER FOR PROMPTS!' },
   simulationist: { model: 'stoner', name: 'Simulation Theorist', blurb: 'None of this is real. Has checked. Twice. The second time it was a bit more real.', toughness: 4, power: 4, hype: 50, radius: 0.4, speed: 1.4, shout: 'WE\'RE IN A SIMULATION, MAN.' },
   cyclist: { model: 'cyclist', name: 'Cyclist', blurb: 'The bike lane is a human right. So is the pavement, apparently. Baguette.', toughness: 5, power: 6, hype: 70, radius: 0.42, speed: 5.2, shout: 'BIKE LANE!' },
+  crossingguard: { model: 'crossingguard', name: 'Crossing Guard', blurb: 'The zebra crossing is a crossing, not a suggestion. The STOP paddle is not decorative.', toughness: 5, power: 4, hype: 60, radius: 0.38, speed: 2.1, shout: 'STOP! LET THEM CROSS!' },
   // The Alignment District, besides.
   ethicist: { model: 'medic', name: 'AI Ethicist', blurb: 'On call for every disaster, the day after it. Has a bag of guidelines the size of a suitcase.', toughness: 5, power: 4, hype: 60, radius: 0.38, speed: 4.4, shout: 'WHERE\'S YOUR IMPACT ASSESSMENT?' },
   prompter: { model: 'scenekid', name: 'Prompt Engineer', blurb: 'Paid six figures to type politely at a computer. Has a fringe to prove it.', toughness: 3, power: 3, hype: 50, radius: 0.34, speed: 3.8, shout: 'YOU ARE A HELPFUL ASSISTANT!' },
@@ -81,18 +82,18 @@ export const FOES = Object.freeze({
   influencer: { model: 'influencer', name: 'AI Influencer', blurb: 'Ten tools that will replace your job. Number seven will shock you. The ring light is on.', toughness: 4, power: 4, hype: 60, radius: 0.34, speed: 3.6, shout: 'LINK IN BIO!' },
   maincharacter: { model: 'phone', name: 'Main Character', blurb: 'Filming it. Filming you. Filming you being smashed, for the content.', toughness: 4, power: 4, hype: 60, radius: 0.37, speed: 2.2, shout: 'THIS IS GOING VIRAL!' },
   screenshotter: { model: 'paparazzo', name: 'Screenshotter', blurb: 'Will have what you said before you delete it. Has a long lens and a longer memory.', toughness: 4, power: 4, hype: 60, radius: 0.37, speed: 3.4, shout: 'SCREENSHOTTED!' },
-  newsletter: { model: 'newsie', name: 'Newsletter Kid', blurb: 'Extra! Extra! Read all about it, on Tuesday, in a newsletter, behind a paywall.', toughness: 3, power: 3, hype: 50, radius: 0.29, speed: 4.6, shout: 'EXTRA! EXTRA! SUBSCRIBE!' },
+  newsletter: { model: 'mailcarrier', name: 'Newsletter Carrier', blurb: 'The weekly essay. The daily brief. Another upsell you did not ask for. Delivered whether you subscribed or not.', toughness: 3, power: 3, hype: 50, radius: 0.29, speed: 4.6, shout: 'EXTRA! EXTRA! SUBSCRIBE!' },
   bird: { model: 'mascot', name: 'The Old Bird', blurb: 'Mascot of a website that changed its name to a letter. Nobody told the bird. Hugs.', toughness: 9, power: 3, hype: 120, radius: 0.61, speed: 2.4, shout: 'TWEET? TWEET?' },
   hottakes: { model: 'hotdog', name: 'Hot Take Vendor', blurb: 'Hot takes! Get your hot takes! Mustard, outrage, or both?', toughness: 5, power: 5, hype: 70, radius: 0.42, speed: 2.8, shout: 'HOT TAKES! GET \'EM HOT!' },
   // Hype Valley.
   founder: { model: 'suit', name: 'Founder', blurb: 'Raising a seed round at a ten-billion valuation. Pre-revenue. Pre-product. Pre-idea.', toughness: 6, power: 6, hype: 90, radius: 0.37, speed: 3.2, shout: 'WE\'RE RAISING!' },
-  recruiter: { model: 'suit', name: 'Recruiter', blurb: 'Has an exciting opportunity for you. It is a ninety-hour week. There is equity.', toughness: 6, power: 6, hype: 80, radius: 0.37, speed: 3.2, shout: 'ARE YOU OPEN TO WORK?' },
+  recruiter: { model: 'officewoman', name: 'Recruiter', blurb: 'Has an exciting opportunity for you. It is a ninety-hour week. There is equity.', toughness: 6, power: 6, hype: 80, radius: 0.37, speed: 3.2, shout: 'ARE YOU OPEN TO WORK?' },
   cryptobro: { model: 'floridaman', name: 'Crypto Bro', blurb: 'Pivoted to AI from NFTs, from crypto, from a timeshare. Has a mullet from each.', toughness: 5, power: 5, hype: 70, radius: 0.4, speed: 3.4, shout: 'WAGMI!' },
   biohacker: { model: 'runner', name: 'Biohacker', blurb: 'Runs a marathon a day to live for ever. Takes a hundred and twelve supplements. Has a newspaper to hit you with.', toughness: 4, power: 4, hype: 60, radius: 0.36, speed: 5.4, shout: 'DON\'T DIE!' },
   corgi: { model: 'corgi', name: 'The VC\'s Corgi', blurb: 'Has a board seat. Has the same voting rights as you. Low, fast, unimpressed.', toughness: 3, power: 3, hype: 50, radius: 0.32, speed: 3.6, shout: 'WOOF. (TERM SHEET.)' },
   billionaire: { model: 'mogul', name: 'The Billionaire', blurb: 'Owns the compute, the platform and the rights to your take. Would like to buy the ball. Stamps.', toughness: 10, power: 12, hype: 900, radius: 1.04, speed: 1.6, shout: 'I\'LL BUY IT.', boss: true, hp: 60 },
   // Brussels-sur-Mer, besides.
-  dpo: { model: 'cop', name: 'Data Protection Officer', blurb: 'Here about your cookies. All of them. Has a badge, and a form for the badge.', toughness: 6, power: 6, hype: 80, radius: 0.37, speed: 3.4, shout: 'THAT IS PERSONAL DATA!' },
+  dpo: { model: 'officeguy', name: 'Data Protection Officer', blurb: 'Here about your cookies. All of them. Has a badge, and a form for the badge.', toughness: 6, power: 6, hype: 80, radius: 0.37, speed: 3.4, shout: 'THAT IS PERSONAL DATA!' },
   waiter: { model: 'waiter', name: 'Waiter (on Strike)', blurb: 'On strike since the soup. Will not bring you the menu. There is no menu.', toughness: 5, power: 5, hype: 70, radius: 0.36, speed: 4.0, shout: 'C\'EST LA GRÈVE!' },
   cabbie: { model: 'cabbie', name: 'Cab Driver', blurb: 'Twenty years behind the wheel. Replaced by a robotaxi on Tuesday. Has opinions about it. All of them.', toughness: 5, power: 6, hype: 70, radius: 0.38, speed: 3.6, shout: 'ROBOTAXI, MY EYE!' },
   tourist: { model: 'tourist', name: 'Tourist', blurb: 'Came for the Grand-Place. Has found the stamping hall. The map has a form on the back.', toughness: 4, power: 3, hype: 50, radius: 0.39, speed: 2.4, shout: 'WHERE IS THE LITTLE STATUE?' },
@@ -134,23 +135,24 @@ export const KNOCKED_OUT = 1.35;
  * whether it is (always, under node, where nothing bakes and nothing is
  * drawn); `build()` makes its mesh the first time it is wanted, once it is.
  */
-export function createFoeMesh(GFX, kind) {
+export function createFoeMesh(GFX, kind, appearanceSeed = 0) {
   const def = FOES[kind];
+  const modelName = appearanceModelFor(def.model, appearanceSeed);
+  const character = CAST[modelName];
+  const person = typeof CAST[def.model].variant === 'function';
   const group = new GFX.Group();
   group.name = kind;
   const body = new GFX.Group();
   group.add(body);
   let model = null, baked = typeof window === 'undefined';
-  const choose = clips();
+  const choose = clips({ person });
   return {
-    group,
-    body,
-    get ready() { return baked || (baked = isBaked(def.model, BOARD_DETAIL)); },
+    group, body, modelName, supportsRunJump: person,
+    get ready() { return baked || (baked = isBaked(modelName, BOARD_DETAIL)); },
     get built() { return model !== null; },
-    /** Makes its mesh, if it is baked and isn't made yet; whether it is made. */
     build() {
-      if (!model && isBaked(def.model, BOARD_DETAIL)) {
-        model = createModel(GFX, CAST[def.model], { detail: BOARD_DETAIL });
+      if (!model && isBaked(modelName, BOARD_DETAIL)) {
+        model = createModel(GFX, character, { detail: BOARD_DETAIL });
         body.add(model.group);
       }
       return model !== null;
@@ -163,11 +165,10 @@ export function createFoeMesh(GFX, kind) {
 }
 
 /** Which clip it plays, and how far in: down once beaten, an attack when the ball is in reach, else walking or idle. */
-function clips() {
+function clips({ person = false } = {}) {
   let clip = 'idle', since = 0;
-  return (t, moving, { striking = false, down = false } = {}) => {
-    let next = down ? 'ko' : striking ? 'attack' : moving ? 'walk' : 'idle';
-    // An attack plays through before it does anything else, and then another, if the ball is still there.
+  return (t, moving, { chasing = false, jumping = false, striking = false, down = false } = {}) => {
+    let next = down ? 'ko' : person && jumping ? 'jump' : striking ? 'attack' : moving ? person && chasing ? 'run' : 'walk' : 'idle';
     if (clip === 'attack' && !down && t - since < STRIKE) next = 'attack';
     else if (clip === 'attack' && next === 'attack') since = t;
     if (next !== clip) { clip = next; since = t; }

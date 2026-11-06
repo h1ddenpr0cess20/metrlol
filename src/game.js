@@ -1,7 +1,7 @@
-import { CAST } from './cast/index.js';
+import { appearanceVariantsFor, CAST } from './cast/index.js';
 import { materialsOf } from 'madness-engine/models/model';
 import { createEffects } from './effects.js';
-import { createPlayer } from 'madness-engine/heroes/mace';
+import { createMetalPlayer } from 'madness-engine/heroes/mace';
 import { createPickups } from './pickups.js';
 import { horizon, say } from './quips.js';
 import { rollSpin, turn } from 'madness-engine/physics';
@@ -35,7 +35,8 @@ export function createGame({ stage, hud, input, audio, storage }) {
   const { GFX, scene, view } = stage;
   const effects = createEffects(GFX, scene);
   const tint = '#aab2c2';
-  const { player, mace } = createPlayer(GFX);
+  // Iron is the default player finish. TODO: unlock the other coin metal finishes through coin purchases.
+  const { player, mace } = createMetalPlayer(GFX, { metal: 'iron' });
   scene.add(player);
   const xray = createXray(GFX);
   scene.add(xray.sprite);
@@ -382,7 +383,9 @@ export function createGame({ stage, hud, input, audio, storage }) {
       const b = run.ball, nearest = new Map();
       for (const f of run.crowd.foes) {
         const d = Math.hypot(f.ball.x - b.x, f.ball.z - b.z);
-        if (!(nearest.get(f.stats.model) <= d)) nearest.set(f.stats.model, d);
+        for (const name of appearanceVariantsFor(f.stats.model)) {
+          if (!(nearest.get(name) <= d)) nearest.set(name, d);
+        }
       }
       return [...nearest].sort((p, q) => p[1] - q[1]).map(([name]) => name);
     },

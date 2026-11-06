@@ -1,4 +1,4 @@
-import { CAST } from './cast/index.js';
+import { appearanceModelFor, CAST } from './cast/index.js';
 import { isBaked } from './cast/library.js';
 import { createModel } from 'madness-engine/models/model';
 
@@ -135,23 +135,24 @@ export const KNOCKED_OUT = 1.35;
  * whether it is (always, under node, where nothing bakes and nothing is
  * drawn); `build()` makes its mesh the first time it is wanted, once it is.
  */
-export function createFoeMesh(GFX, kind) {
+export function createFoeMesh(GFX, kind, appearanceSeed = 0) {
   const def = FOES[kind];
+  const modelName = appearanceModelFor(def.model, appearanceSeed);
+  const character = CAST[modelName];
+  const person = typeof CAST[def.model].variant === 'function';
   const group = new GFX.Group();
   group.name = kind;
   const body = new GFX.Group();
   group.add(body);
   let model = null, baked = typeof window === 'undefined';
-  const choose = clips();
+  const choose = clips({ person });
   return {
-    group,
-    body,
-    get ready() { return baked || (baked = isBaked(def.model, BOARD_DETAIL)); },
+    group, body, modelName, supportsRunJump: person,
+    get ready() { return baked || (baked = isBaked(modelName, BOARD_DETAIL)); },
     get built() { return model !== null; },
-    /** Makes its mesh, if it is baked and isn't made yet; whether it is made. */
     build() {
-      if (!model && isBaked(def.model, BOARD_DETAIL)) {
-        model = createModel(GFX, CAST[def.model], { detail: BOARD_DETAIL });
+      if (!model && isBaked(modelName, BOARD_DETAIL)) {
+        model = createModel(GFX, character, { detail: BOARD_DETAIL });
         body.add(model.group);
       }
       return model !== null;
@@ -164,11 +165,10 @@ export function createFoeMesh(GFX, kind) {
 }
 
 /** Which clip it plays, and how far in: down once beaten, an attack when the ball is in reach, else walking or idle. */
-function clips() {
+function clips({ person = false } = {}) {
   let clip = 'idle', since = 0;
-  return (t, moving, { striking = false, down = false } = {}) => {
-    let next = down ? 'ko' : striking ? 'attack' : moving ? 'walk' : 'idle';
-    // An attack plays through before it does anything else, and then another, if the ball is still there.
+  return (t, moving, { chasing = false, jumping = false, striking = false, down = false } = {}) => {
+    let next = down ? 'ko' : person && jumping ? 'jump' : striking ? 'attack' : moving ? person && chasing ? 'run' : 'walk' : 'idle';
     if (clip === 'attack' && !down && t - since < STRIKE) next = 'attack';
     else if (clip === 'attack' && next === 'attack') since = t;
     if (next !== clip) { clip = next; since = t; }

@@ -147,7 +147,7 @@ export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
         let ax = 0, az = 0;
         f.chasing = !!ball && dist < notice && fromHome < f.range + notice && Math.abs(ball.y - b.y) < 1.6 && dist > 1e-3;
         if (f.look.supportsRunJump && f.chasing && !f.striking && ball) {
-          const speedToward = -(ball.vx * dx + ball.vz * dz) / Math.max(dist, 1e-3);
+          const speedToward = (ball.vx * dx + ball.vz * dz) / Math.max(dist, 1e-3);
           const gap = dist - ball.r - b.r;
           if (gap > 0.35 && gap < 2.1 && speedToward > 3.2 && Math.hypot(ball.vx, ball.vz) > 5.2 && time >= f.nextJumpAt) {
             f.jumpUntil = time + 0.48;

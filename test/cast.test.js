@@ -16,3 +16,13 @@ test('everybody in the cast is somebody, and everybody bakes within budget and m
     for (const clip of ['idle', 'walk', 'attack', 'ko']) m.pose({ clip, t: 0.3, time: 1.2, seed: 1, speed: 1 });
   }
 });
+
+
+test('the refreshed roles use the newer character assets that fit them', () => {
+  assert.equal(FOES.crossingguard.model, 'crossingguard');
+  assert.equal(FOES.recruiter.model, 'officewoman');
+  assert.equal(FOES.dpo.model, 'officeguy');
+  assert.equal(FOES.doorman.model, 'bouncer');
+  assert.equal(FOES.newsletter, undefined, 'the public foe key remains newsletter');
+  assert.equal(FOES.newsletter.model, 'mailcarrier');
+});

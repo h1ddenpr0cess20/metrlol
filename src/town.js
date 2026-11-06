@@ -383,6 +383,9 @@ function portlandHeights(c) {
 
   skatePark(c);
 
+  // A crossing guard at the zebra crossing on the south side of the Portland Heights junction.
+  c.foe('crossingguard', 34.2, 63.2, { range: 1.4, notice: 5 });
+
   // The food co-op, with a loading ramp up its side to the roof.
   block(c, 10, 62, 20, 22, 'concrete');
   c.block(13, 65, 10, 8, CURB + 2.4, { wall: '#e8e2d0', facade: 'shop', base: CURB, door: 'n', lit: 1 });

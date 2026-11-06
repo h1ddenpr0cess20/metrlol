@@ -18,6 +18,7 @@ import { WebGPUBackend } from 'madness-engine/gfx/webgpu';
 import { createView } from 'madness-engine/views/town';
 import { paintRoom } from 'madness-engine/textures/rooms/town';
 import { paintSky } from 'madness-engine/textures/skies/town';
+import { paintMetalReflections } from './metal-room.js';
 
 /** How far back the camera sits at zoom 1, and its lens. Where round the marble it is, is the view's (`view.js`). */
 export const LENS = Object.freeze({ distance: 10, fov: 36 });
@@ -128,7 +129,7 @@ export async function createStage(host) {
   };
   scene.add(backdrop);
 
-  const room = paintRoom();
+  const room = paintMetalReflections(paintRoom());
   if (room) {
     const texture = new GFX.Texture(room);
     texture.mapping = GFX.EquirectangularReflectionMapping;

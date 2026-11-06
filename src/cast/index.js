@@ -2,15 +2,15 @@ import alien from 'madness-engine/characters/alien';
 import archaeologist from 'madness-engine/characters/archaeologist';
 import beerguy from 'madness-engine/characters/beerguy';
 import blader from 'madness-engine/characters/blader';
+import bouncer from 'madness-engine/characters/bouncer';
 import cabbie from 'madness-engine/characters/cabbie';
-import clubber from 'madness-engine/characters/clubber';
-import cop from 'madness-engine/characters/cop';
 import corgi from 'madness-engine/characters/corgi';
 import coroner from 'madness-engine/characters/coroner';
 import cowboy from 'madness-engine/characters/cowboy';
 import critic from 'madness-engine/characters/critic';
 import cultist from 'madness-engine/characters/cultist';
 import cyclist from 'madness-engine/characters/cyclist';
+import crossingguard from 'madness-engine/characters/crossingguard';
 import dj from 'madness-engine/characters/dj';
 import doomlord from 'madness-engine/characters/doomlord';
 import drunk from 'madness-engine/characters/drunk';
@@ -30,14 +30,16 @@ import hxckid from 'madness-engine/characters/hxckid';
 import influencer from 'madness-engine/characters/influencer';
 import knight from 'madness-engine/characters/knight';
 import lifeguard from 'madness-engine/characters/lifeguard';
+import mailcarrier from 'madness-engine/characters/mailcarrier';
 import mascot from 'madness-engine/characters/mascot';
 import medic from 'madness-engine/characters/medic';
 import mime from 'madness-engine/characters/mime';
 import mogul from 'madness-engine/characters/mogul';
 import mourner from 'madness-engine/characters/mourner';
 import neighbour from 'madness-engine/characters/neighbour';
-import newsie from 'madness-engine/characters/newsie';
 import nonna from 'madness-engine/characters/nonna';
+import officeguy from 'madness-engine/characters/officeguy';
+import officewoman from 'madness-engine/characters/officewoman';
 import nuguy from 'madness-engine/characters/nuguy';
 import pallbearer from 'madness-engine/characters/pallbearer';
 import paparazzo from 'madness-engine/characters/paparazzo';
@@ -76,10 +78,10 @@ const blackcat = { ...CAT_DEFS['cat-black'], scale: 0.8 };
 
 /** Everyone sculpted, by name (see foes.js for who they are and what they are called here). */
 export const CAST = {
-  alien, archaeologist, beerguy, blackcat, blader, cabbie, clubber, cop, corgi, coroner, cowboy,
-  critic, cultist, cyclist, dj, doomlord, drunk, emo, engineer, eurocrat, floridaman, folkie, foreman,
-  gatekeeper, gent, goth, hippie, hipster, hotdog, hxckid, influencer, knight, lifeguard, mascot, medic,
-  mime, mogul, mourner, neighbour, newsie, nonna, nuguy, pallbearer, paparazzo, pauser, phone, poet, poser,
+  alien, archaeologist, beerguy, blackcat, blader, bouncer, cabbie, corgi, coroner, cowboy,
+  critic, cultist, cyclist, crossingguard, dj, doomlord, drunk, emo, engineer, eurocrat, floridaman, folkie, foreman,
+  gatekeeper, gent, goth, hippie, hipster, hotdog, hxckid, influencer, knight, lifeguard, mailcarrier, mascot, medic,
+  mime, mogul, mourner, neighbour, nonna, nuguy, officeguy, officewoman, pallbearer, paparazzo, pauser, phone, poet, poser,
   promoter, punk, purist, rat, raver, roadie, robot, runner, scenekid, security, skater, soundguy, stoner,
   streetteam, suit, surfer, tourist, troll, waiter, welder, wizard, yeti, zinekid, zombie,
 };

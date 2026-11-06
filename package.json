@@ -23,6 +23,6 @@
   "dependencies": {
     "@fontsource/anton": "^5.3.0",
     "@fontsource/barlow-condensed": "^5.3.0",
-    "madness-engine": "github:h1ddenpr0cess20/madness-engine"
+    "madness-engine": "github:h1ddenpr0cess20/madness-engine#7646880828c4dbca5fe2cd8ee2998cb5b830f22e"
   }
 }

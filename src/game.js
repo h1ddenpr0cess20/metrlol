@@ -1,7 +1,7 @@
 import { CAST } from './cast/index.js';
 import { materialsOf } from 'madness-engine/models/model';
 import { createEffects } from './effects.js';
-import { createPlayer } from 'madness-engine/heroes/mace';
+import { createMetalPlayer } from 'madness-engine/heroes/mace';
 import { createPickups } from './pickups.js';
 import { horizon, say } from './quips.js';
 import { rollSpin, turn } from 'madness-engine/physics';
@@ -35,7 +35,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
   const { GFX, scene, view } = stage;
   const effects = createEffects(GFX, scene);
   const tint = '#aab2c2';
-  const { player, mace } = createPlayer(GFX);
+  const { player, mace } = createMetalPlayer(GFX, { metal: 'chrome' });
   scene.add(player);
   const xray = createXray(GFX);
   scene.add(xray.sprite);

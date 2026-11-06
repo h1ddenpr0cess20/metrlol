@@ -1,4 +1,4 @@
-import { CAST } from './cast/index.js';
+import { appearanceVariantsFor, CAST } from './cast/index.js';
 import { materialsOf } from 'madness-engine/models/model';
 import { createEffects } from './effects.js';
 import { createMetalPlayer } from 'madness-engine/heroes/mace';
@@ -383,7 +383,9 @@ export function createGame({ stage, hud, input, audio, storage }) {
       const b = run.ball, nearest = new Map();
       for (const f of run.crowd.foes) {
         const d = Math.hypot(f.ball.x - b.x, f.ball.z - b.z);
-        if (!(nearest.get(f.look.modelName) <= d)) nearest.set(f.look.modelName, d);
+        for (const name of appearanceVariantsFor(f.stats.model)) {
+          if (!(nearest.get(name) <= d)) nearest.set(name, d);
+        }
       }
       return [...nearest].sort((p, q) => p[1] - q[1]).map(([name]) => name);
     },

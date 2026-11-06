@@ -37,6 +37,14 @@ const GUARD = Object.freeze({ foe: 0.9, boss: 1.5 });
 /** How long before a foe shouts again. */
 const HOARSE = 20;
 
+/** Stable spatial seed: nearby characters are less likely to repeat the same look. */
+function appearanceSeed(m, index) {
+  let seed = Math.imul(Math.round((m.x ?? 0) * 100), 73856093);
+  seed ^= Math.imul(Math.round((m.z ?? 0) * 100), 19349663);
+  seed ^= Math.imul(index + 1, 83492791);
+  return seed >>> 0;
+}
+
 export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
   const group = new GFX.Group();
   group.name = 'crowd';
@@ -48,13 +56,14 @@ export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
   const foes = (enabled ? map.foes : []).map((m, i) => {
     const stats = FOES[m.kind];
     if (!stats) throw new Error(`${map.name}: no such foe as ${m.kind}`);
-    const look = createFoeMesh(GFX, m.kind);
+    const look = createFoeMesh(GFX, m.kind, appearanceSeed(m, i));
     look.group.rotation.y = m.facing ?? 0;
     const ground = map.heightAt(m.x, m.z) ?? 0;
     const ball = createBall({ x: m.x, y: ground + stats.radius, z: m.z, r: stats.radius, mass: stats.boss ? 50 : 2.5 });
     ball.grounded = true;
     return {
-      ...m, i, stats, look, ball, heading: m.facing ?? 0, moving: false, chasing: false, striking: false,
+      ...m, i, stats, look, ball, heading: m.facing ?? 0, moving: false, chasing: false, striking: false, jumping: false,
+      jumpUntil: 0, nextJumpAt: 1.2 + (i % 5) * 0.35,
       dead: false, gone: false, hp: stats.hp ?? stats.toughness, guard: 0, flung: null, downAt: 0,
       home: [m.x, ground + stats.radius, m.z], drift: null, driftUntil: 0, shoutedAt: -HOARSE, awake: false,
     };
@@ -130,13 +139,22 @@ export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
         const dx = ball ? ball.x - b.x : 0, dz = ball ? ball.z - b.z : 0;
         const dist = ball ? Math.hypot(dx, dz) : Infinity;
         f.awake = dist < SLEEP;
-        if (!f.awake) { f.moving = false; f.chasing = false; continue; }
+        if (!f.awake) { f.moving = false; f.chasing = false; f.jumping = false; continue; }
 
         // What it does: come at the ball if it is near its patch; otherwise drift about, or go home.
         const notice = f.notice ?? NOTICE;
         const fromHome = ball ? Math.hypot(ball.x - f.home[0], ball.z - f.home[2]) : Infinity;
         let ax = 0, az = 0;
         f.chasing = !!ball && dist < notice && fromHome < f.range + notice && Math.abs(ball.y - b.y) < 1.6 && dist > 1e-3;
+        if (f.look.supportsRunJump && f.chasing && !f.striking && ball) {
+          const speedToward = -(ball.vx * dx + ball.vz * dz) / Math.max(dist, 1e-3);
+          const gap = dist - ball.r - b.r;
+          if (gap > 0.35 && gap < 2.1 && speedToward > 3.2 && Math.hypot(ball.vx, ball.vz) > 5.2 && time >= f.nextJumpAt) {
+            f.jumpUntil = time + 0.48;
+            f.nextJumpAt = time + 3.4 + (f.i % 4) * 0.55;
+          }
+        }
+        f.jumping = f.look.supportsRunJump && time < f.jumpUntil;
         if (f.chasing) {
           ax = dx / dist; az = dz / dist;
           if (time - f.shoutedAt > HOARSE) {
@@ -232,7 +250,7 @@ export function createCrowd(GFX, map, world, { killY, enabled = true } = {}) {
         const every = far < POSE_HALF ? 1 : far < POSE_THIRD ? 2 : 3;
         if (!f.posed || (f.awake && (frame + f.i) % every === 0)) {
           f.posed = true;
-          f.look.animate(time + f.i * 1.37, f.moving, { chasing: f.chasing, striking: f.striking });
+          f.look.animate(time + f.i * 1.37, f.moving, { chasing: f.chasing, striking: f.striking, jumping: f.jumping });
         }
       }
     },

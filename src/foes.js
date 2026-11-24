@@ -29,7 +29,7 @@ export const FOES = Object.freeze({
   // The Pause crowd, and the doomers.
   pauser: { model: 'pauser', name: 'Pause Protester', blurb: 'WHEN IN DOUBT, PAUSE. Is in doubt. About everything. Has a sign about it.', toughness: 4, power: 3, hype: 50, radius: 0.37, speed: 2.8, shout: 'PAUSE! PAUSE!' },
   doomer: { model: 'mourner', name: 'Doomer', blurb: 'A funeral. It is always a funeral. Has been dressed for it since 2022.', toughness: 5, power: 5, hype: 70, radius: 0.41, speed: 2.2, shout: 'p(doom) = 97%!' },
-  forecaster: { model: 'coroner', name: 'Forecaster', blurb: 'Pronounces civilisation dead. Often prematurely. The date keeps moving.', toughness: 6, power: 6, hype: 80, radius: 0.37, speed: 3.0, shout: 'TIME OF DEATH: 2027!' },
+  forecaster: { model: 'coroner', name: 'Forecaster', blurb: 'Pronounces civilization dead. Often prematurely. The date keeps moving.', toughness: 6, power: 6, hype: 80, radius: 0.37, speed: 3.0, shout: 'TIME OF DEATH: 2027!' },
   rationalist: { model: 'cultist', name: 'Rationalist', blurb: 'Eleven people in a group house, one bathroom and a prior. Updates constantly. Never in your direction.', toughness: 5, power: 5, hype: 80, radius: 0.38, speed: 1.9, shout: 'ACTUALLY, THE PRIOR...' },
   purist: { model: 'purist', name: 'Alignment Purist', blurb: 'Will tell you which of your safety plans are not real alignment. All of them.', toughness: 6, power: 6, hype: 90, radius: 0.37, speed: 2.8, shout: 'THAT\'S NOT REAL ALIGNMENT!' },
   researcher: { model: 'engineer', name: 'Safety Researcher', blurb: 'Has found fourteen ways it could go wrong, and a fifteenth in the paper under review.', toughness: 5, power: 6, hype: 70, radius: 0.41, speed: 3.0, shout: 'IT\'S COMPLICATED!' },
@@ -58,7 +58,7 @@ export const FOES = Object.freeze({
   gatekeeper: { model: 'gatekeeper', name: 'Discourse Gatekeeper', blurb: 'Has been on this site since 2009. Will explain why this is not real discourse.', toughness: 7, power: 7, hype: 110, radius: 0.43, speed: 2.4, shout: 'WHO LET YOU IN?' },
   // Portland Heights, besides.
   yimby: { model: 'hipster', name: 'YIMBY', blurb: 'Wants housing built everywhere. Has a tote bag about it, and a spreadsheet of where. Mostly here.', toughness: 5, power: 5, hype: 70, radius: 0.37, speed: 3.0, shout: 'BUILD MORE HOUSING!' },
-  nimby: { model: 'neighbour', name: 'NIMBY', blurb: 'Supports housing. In principle. Elsewhere. Has come round in his bathrobe at eleven to say so.', toughness: 5, power: 5, hype: 70, radius: 0.37, speed: 3.4, shout: 'NOT IN MY BACKYARD!' },
+  nimby: { model: 'neighbor', name: 'NIMBY', blurb: 'Supports housing. In principle. Elsewhere. Has come round in his bathrobe at eleven to say so.', toughness: 5, power: 5, hype: 70, radius: 0.37, speed: 3.4, shout: 'NOT IN MY BACKYARD!' },
   folksinger: { model: 'folkie', name: 'Protest Singer', blurb: 'Has written a song about the algorithm. Eleven verses. You come in at verse nine.', toughness: 4, power: 4, hype: 50, radius: 0.37, speed: 3.0, shout: 'WHERE HAVE ALL THE JOBS GONE?' },
   dropout: { model: 'skater', name: 'Dropout Founder', blurb: 'Left school at nineteen to build an AI wrapper. It is a wrapper. Has a board, and a board of advisors.', toughness: 4, power: 5, hype: 60, radius: 0.38, speed: 5.0, shout: 'IT\'S UBER FOR PROMPTS!' },
   simulationist: { model: 'stoner', name: 'Simulation Theorist', blurb: 'None of this is real. Has checked. Twice. The second time it was a bit more real.', toughness: 4, power: 4, hype: 50, radius: 0.4, speed: 1.4, shout: 'WE\'RE IN A SIMULATION, MAN.' },
@@ -101,10 +101,10 @@ export const FOES = Object.freeze({
   lifeguard: { model: 'lifeguard', name: 'Lifeguard', blurb: 'Bathing is forbidden by directive. Will save you from it.', toughness: 7, power: 7, hype: 100, radius: 0.4, speed: 4.2, shout: 'NO SWIMMING! DIRECTIVE 2006/7!' },
   surfer: { model: 'surfer', name: 'Surfer', blurb: 'Riding the wave of AI. The wave is a hype cycle. Stoked.', toughness: 5, power: 5, hype: 70, radius: 0.37, speed: 3.8, shout: 'RIDE THE WAVE, BRO!' },
   // The Compute Farm.
-  technician: { model: 'welder', name: 'Datacentre Technician', blurb: 'Keeps the GPUs cool. Has a mask. Has seen things in the hot aisle.', toughness: 5, power: 5, hype: 70, radius: 0.4, speed: 2.4, shout: 'MIND THE HOT AISLE!' },
+  technician: { model: 'welder', name: 'Datacenter Technician', blurb: 'Keeps the GPUs cool. Has a mask. Has seen things in the hot aisle.', toughness: 5, power: 5, hype: 70, radius: 0.4, speed: 2.4, shout: 'MIND THE HOT AISLE!' },
   oncall: { model: 'soundguy', name: 'SRE On Call', blurb: 'Paged at three in the morning. Check. One. Two. Is it plugged in?', toughness: 5, power: 5, hype: 70, radius: 0.37, speed: 3.0, shout: 'HAVE YOU TRIED RESTARTING IT?' },
   wrangler: { model: 'roadie', name: 'Cable Wrangler', blurb: 'Huge. Bald. Carries a rack of GPUs like a flight case. Resents everything.', toughness: 8, power: 8, hype: 130, radius: 0.47, speed: 2.4, shout: 'COMING THROUGH!' },
-  guard: { model: 'security', name: 'Datacentre Security', blurb: 'Has a radio. Is using the radio. You are not on the list.', toughness: 9, power: 9, hype: 140, radius: 0.49, speed: 2.8, shout: 'BADGE, PLEASE.' },
+  guard: { model: 'security', name: 'Datacenter Security', blurb: 'Has a radio. Is using the radio. You are not on the list.', toughness: 9, power: 9, hype: 140, radius: 0.49, speed: 2.8, shout: 'BADGE, PLEASE.' },
   robot: { model: 'robot', name: 'Humanoid Robot', blurb: 'Folds laundry at half a shirt an hour. Walks toward you at about the same speed. Demo only.', toughness: 6, power: 6, hype: 100, radius: 0.42, speed: 2.0, shout: 'HELLO. I AM HELPFUL.' },
   keeper: { model: 'knight', name: 'Keeper of the Weights', blurb: 'Guards the model weights with a sword. The weights are on the internet. Cannot see out of the helm.', toughness: 7, power: 7, hype: 100, radius: 0.43, speed: 2.4, shout: 'NONE SHALL DOWNLOAD!' },
   // The far side.

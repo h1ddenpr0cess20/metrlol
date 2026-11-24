@@ -36,7 +36,7 @@ import medic from 'madness-engine/characters/medic';
 import mime from 'madness-engine/characters/mime';
 import mogul from 'madness-engine/characters/mogul';
 import mourner from 'madness-engine/characters/mourner';
-import neighbour from 'madness-engine/characters/neighbour';
+import neighbor from 'madness-engine/characters/neighbor';
 import nonna from 'madness-engine/characters/nonna';
 import officeguy from 'madness-engine/characters/officeguy';
 import officewoman from 'madness-engine/characters/officewoman';
@@ -82,7 +82,7 @@ export const BASE_CAST = Object.freeze({
   alien, archaeologist, beerguy, blackcat, blader, bouncer, cabbie, corgi, coroner, cowboy,
   critic, cultist, cyclist, crossingguard, dj, doomlord, drunk, emo, engineer, eurocrat, floridaman, folkie, foreman,
   gatekeeper, gent, goth, hippie, hipster, hotdog, hxckid, influencer, knight, lifeguard, mailcarrier, mascot, medic,
-  mime, mogul, mourner, neighbour, nonna, nuguy, officeguy, officewoman, pallbearer, paparazzo, pauser, phone, poet, poser,
+  mime, mogul, mourner, neighbor, nonna, nuguy, officeguy, officewoman, pallbearer, paparazzo, pauser, phone, poet, poser,
   promoter, punk, purist, rat, raver, roadie, robot, runner, scenekid, security, skater, soundguy, stoner,
   streetteam, suit, surfer, tourist, troll, waiter, welder, wizard, yeti, zinekid, zombie,
 });
@@ -169,7 +169,7 @@ export function appearanceModelFor(model, seed = 0) {
 }
 
 
-/** The actual seeded colours supplied to a cast variant (including recoloured hair). */
+/** The actual seeded colors supplied to a cast variant (including recolored hair). */
 export function appearancePaletteFor(model) {
   return APPEARANCE_PALETTES[model] ?? null;
 }

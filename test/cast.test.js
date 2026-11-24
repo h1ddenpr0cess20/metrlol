@@ -40,9 +40,9 @@ test('human cast members have seeded skin, eye, hair and clothing appearances', 
       return appearancePaletteFor(variant);
     });
     assert.ok(new Set(palettes.map((p) => p.skin)).size > 1, name + ' skin tones vary');
-    assert.ok(new Set(palettes.map((p) => p.eyes)).size > 1, name + ' eye colours vary');
-    if (base.palette().hair !== null) assert.ok(new Set(palettes.map((p) => p.hair)).size > 1, name + ' hair colours vary');
-    if (Object.keys(base.palette().look).length) assert.ok(new Set(palettes.map((p) => JSON.stringify(p.look))).size > 1, name + ' clothing colours vary');
+    assert.ok(new Set(palettes.map((p) => p.eyes)).size > 1, name + ' eye colors vary');
+    if (base.palette().hair !== null) assert.ok(new Set(palettes.map((p) => p.hair)).size > 1, name + ' hair colors vary');
+    if (Object.keys(base.palette().look).length) assert.ok(new Set(palettes.map((p) => JSON.stringify(p.look))).size > 1, name + ' clothing colors vary');
     assert.equal(appearanceModelFor(name, 19), appearanceModelFor(name, 19));
   }
 });

@@ -84,7 +84,7 @@ export function createHud(root, { onStart, onNew }) {
     },
 
     /**
-     * The map, every frame: centred on the ball, turned to the camera's
+     * The map, every frame: centerd on the ball, turned to the camera's
      * `yaw`, `zoom` tiles across, with the cars, the people, the whetstones and
      * the golden GPUs not yet found in the districts it has been to.
      */

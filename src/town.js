@@ -179,8 +179,8 @@ function house(c, x, z, w, d, wall, { ridge = 'x', door = 'n', h = 1.6 } = {}) {
 }
 
 /** A hedge (or any wall): drawn, and solid. */
-function wall(c, x0, z0, x1, z1, y0, y1, colour, finish = 'matte', tex = null) {
-  c.prop('wall', x0, z0, { x1, z1, y0, y1, colour, finish, tex });
+function wall(c, x0, z0, x1, z1, y0, y1, color, finish = 'matte', tex = null) {
+  c.prop('wall', x0, z0, { x1, z1, y0, y1, color, finish, tex });
   c.solid(x0, y0, z0, x1, y1, z1);
 }
 
@@ -197,12 +197,12 @@ function bowl(c, x, z, w, d, rim, depth, surface, flat = 0.3) {
  * Rings of hedge, one inside the next, each with its way in on the side
  * the one round it hasn't: `gaps`, 'n' or 's' for each, outermost first.
  */
-function maze(c, x0, z0, x1, z1, gaps, { colour = '#3f7a34', tex = 'hedge', y = CURB, h = 0.9, step = 2.2 } = {}) {
+function maze(c, x0, z0, x1, z1, gaps, { color = '#3f7a34', tex = 'hedge', y = CURB, h = 0.9, step = 2.2 } = {}) {
   const t = 0.4;
   gaps.forEach((gap, i) => {
     const a = x0 + i * step, b = z0 + i * step, cc = x1 - i * step, d = z1 - i * step;
     const mid = (a + cc) / 2;
-    const hedge = (p, q, r, s) => wall(c, p, q, r, s, y, y + h, colour, 'matte', tex);
+    const hedge = (p, q, r, s) => wall(c, p, q, r, s, y, y + h, color, 'matte', tex);
     const side = (zz, open) => {
       if (open) { hedge(a, zz, mid - 1, zz + t); hedge(mid + 1, zz, cc, zz + t); }
       else hedge(a, zz, cc, zz + t);
@@ -334,7 +334,7 @@ function streetFurniture(c) {
 function portlandHeights(c) {
   const walls = ['#e6dccb', '#c9d8e8', '#f0d9a8', '#d8b8c8', '#cfe3c2', '#f2e6d0', '#e8c8a8', '#c8d8c0'];
 
-  // Home, and the neighbours.
+  // Home, and the neighbors.
   block(c, 10, 10, 20, 22);
   house(c, 12, 12, 5, 5, '#f0d9a8');
   house(c, 23, 12, 5, 5, walls[1]);
@@ -664,9 +664,9 @@ function pauseCompound(c) {
   placard(c, 36, 90.6, 'PAUSE COMPOUND\nHONK IF YOU\'RE\nSCARED', { facing: 2, ...RED });
 
   /** A tank: solid as the cylinder it's drawn as, its roof something to stand on. */
-  const tank = (cx, cz, r, h, colour = '#e8e4dc', label = null) => {
+  const tank = (cx, cz, r, h, color = '#e8e4dc', label = null) => {
     c.cylinder(cx, cz, r, 0, h);
-    c.prop('tank', cx, cz, { r, h, colour, label });
+    c.prop('tank', cx, cz, { r, h, color, label });
   };
 
   // Up the ramp, along the catwalk, to the end of it.
@@ -732,14 +732,14 @@ function towers(c, x, z, w, d, seed, { skip = [] } = {}) {
   const looks = [['#8a98aa', 'office'], ['#a8b4c4', 'office'], ['#c87a5a', 'brick'], ['#6a7890', 'office'], ['#b0a090', 'brick']];
   spots.forEach(([tx, tz], i) => {
     if (skip.includes(i)) return;
-    const [colour, facade] = looks[Math.floor(rnd() * looks.length)];
+    const [color, facade] = looks[Math.floor(rnd() * looks.length)];
     const h = CURB + 5 + Math.round(rnd() * 6);
-    c.block(tx, tz, tw, td, h, { wall: colour, facade, base: CURB, lit: 0.3 + rnd() * 0.3, door: i < 2 ? 'n' : 's' });
+    c.block(tx, tz, tw, td, h, { wall: color, facade, base: CURB, lit: 0.3 + rnd() * 0.3, door: i < 2 ? 'n' : 's' });
     // A screen on the face toward the street, now and then.
     // (Not on the front left one: every face of it is a street the camera looks away from, or a gap the next tower hides.)
     if (i > 0 && rnd() < 0.7) {
       const text = SCREENS[Math.floor(rnd() * SCREENS.length)];
-      const [bg, fg] = SCREEN_COLOURS[Math.floor(rnd() * SCREEN_COLOURS.length)];
+      const [bg, fg] = SCREEN_COLORS[Math.floor(rnd() * SCREEN_COLORS.length)];
       // On a face that can be seen: the south face of the back two, the east face of the front right one.
       if (i >= 2) screen(c, tx + tw / 2, tz + td + 0.05, CURB + 2.6, text, { facing: 0, w: Math.min(tw - 1, 5), h: 1.8, bg, fg });
       else screen(c, tx + tw + 0.05, tz + td / 2, CURB + 2.6, text, { facing: 1, w: Math.min(td - 1, 5), h: 1.8, bg, fg });
@@ -748,7 +748,7 @@ function towers(c, x, z, w, d, seed, { skip = [] } = {}) {
 }
 
 const SCREENS = ['TRENDING:\nYOU', 'RATIO', 'HOT TAKE\nINCOMING', 'ENGAGEMENT\n+3%', 'THIS IS\nFINE', 'AGREE?', 'UNFOLLOW', 'BREAKING:\nOPINIONS', 'READ THE\nTHREAD', '1/47', 'COMMUNITY\nNOTE ADDED', 'SPONSORED'];
-const SCREEN_COLOURS = [['#1a1a2a', '#f4f1ea'], ['#0a1a3a', '#5ac8ff'], ['#2a0a1a', '#ff5a8a'], ['#1a2a0a', '#c8ff5a'], ['#2a1a0a', '#ffc85a']];
+const SCREEN_COLORS = [['#1a1a2a', '#f4f1ea'], ['#0a1a3a', '#5ac8ff'], ['#2a0a1a', '#ff5a8a'], ['#1a2a0a', '#c8ff5a'], ['#2a1a0a', '#ffc85a']];
 
 function timeline(c) {
   towers(c, 80, 88, 23, 22, 41);
@@ -766,7 +766,7 @@ function timeline(c) {
       if (Math.abs(off) * R < 0.9) continue;
       const px = E.x + Math.cos(a) * R, pz = E.z + Math.sin(a) * R;
       c.cylinder(px, pz, 0.3, CURB, CURB + 2.2);
-      c.prop('column', px, pz, { r: 0.3, h: 2.2, colour: '#e8e4dc' });
+      c.prop('column', px, pz, { r: 0.3, h: 2.2, color: '#e8e4dc' });
     }
   }
   c.gpu('In the echo chamber', E.x, E.z);
@@ -795,7 +795,7 @@ function timeline(c) {
   block(c, 80, 140, 23, 24, 'concrete');
   const S = 3.0;
   c.slope(83, 150, 12, 2, CURB, S, 'x', { surface: 'metal' });
-  c.deck(95, 150, 33, 2, S, { colour: '#2a2c34' });
+  c.deck(95, 150, 33, 2, S, { color: '#2a2c34' });
   wall(c, 83, 149.8, 95, 150, CURB, S + 0.6, '#5a6068', 'shiny');
   wall(c, 83, 152, 95, 152.2, CURB, S + 0.6, '#5a6068', 'shiny');
   wall(c, 95, 149.8, 128, 150, S, S + 0.6, '#5a6068', 'shiny');
@@ -845,7 +845,7 @@ function hypeValley(c) {
 
   // The footbridge off the plateau, over the road and the superhighway, to the far side.
   c.slope(221, 106, 5, 2, 2.5, 2.7, 'x', { surface: 'concrete' });
-  c.deck(226, 106, 17.2, 2, 2.7, { colour: '#a7a39a' });
+  c.deck(226, 106, 17.2, 2, 2.7, { color: '#a7a39a' });
   wall(c, 221, 105.8, 226, 106, 0, 3.3, '#5a6068', 'shiny');
   wall(c, 221, 108, 226, 108.2, 0, 3.3, '#5a6068', 'shiny');
   wall(c, 226, 105.8, 243, 106, 2.7, 3.3, '#5a6068', 'shiny');
@@ -858,7 +858,7 @@ function hypeValley(c) {
   c.block(166, 132, 8, 1, 2.2, { wall: '#d8c8b0', wtex: 'clapboard' });
   c.block(166, 133, 1, 6, 2.2, { wall: '#d8c8b0', wtex: 'clapboard' });
   c.block(173, 133, 1, 6, 2.2, { wall: '#d8c8b0', wtex: 'clapboard' });
-  c.deck(165.8, 131.8, 8.4, 7.4, 2.5, { colour: '#6a5a4a', roof: true });
+  c.deck(165.8, 131.8, 8.4, 7.4, 2.5, { color: '#6a5a4a', roof: true });
   c.gpu('The garage where it all started', 170, 134.5);
   placard(c, 170, 141.5, 'IN THIS GARAGE\nIN 2015\nWE CHANGED\nEVERYTHING', { facing: 0 });
   c.place('junker', 170, 145, { angle: 0.2, fixed: true });
@@ -880,7 +880,7 @@ function hypeValley(c) {
   bowl(c, P.x - 3, P.z - 3, 6, 6, P.h, 0.9, 'pool', 0.3);
   c.gpu('The VC\'s infinity pool', P.x, P.z, { y: P.h - 0.9 });
   c.prop('chair', P.x - 4.5, P.z - 1.5).prop('chair', P.x - 4.5, P.z + 1.5);
-  c.prop('parasol', P.x + 4.5, P.z, { colour: '#c8182a' });
+  c.prop('parasol', P.x + 4.5, P.z, { color: '#c8182a' });
   c.cylinder(P.x + 4.5, P.z, 0.06, P.h, P.h + 2.2);
   placard(c, P.x, P.z - 13.5, 'SAND HILL\nPRIVATE\n(YOU CAN\'T AFFORD IT)', { facing: 2 });
   c.likeLine(P.x - 11, P.z, P.x - 5, P.z, 4).likeLine(P.x, P.z + 11, P.x, P.z + 5, 4);
@@ -940,7 +940,7 @@ function brussels(c) {
   c.block(100, 172, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
   c.block(100, 178, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
   c.flat(100, 173, 6, 5, 0, { surface: 'sand' });
-  c.deck(99.8, 171.8, 6.4, 7.4, 2.5, { colour: '#e8e4dc', roof: true });
+  c.deck(99.8, 171.8, 6.4, 7.4, 2.5, { color: '#e8e4dc', roof: true });
   c.prop('sandbox', 100, 173, { w: 6, d: 5 });
   c.gpu('In the regulatory sandbox', 103, 175.5);
   c.whetstone('Brussels', 96.5, 188.5);
@@ -959,7 +959,7 @@ function brussels(c) {
     c.place('junker', x, z, { angle: r * 1.3, fixed: true });
     c.cylinder(x, z, 0.9, 0, 0.9);
   }
-  for (const [x, z] of [[27, 207], [26, 214], [12, 216]]) c.place('tyres', x, z, { angle: x });
+  for (const [x, z] of [[27, 207], [26, 214], [12, 216]]) c.place('tires', x, z, { angle: x });
   c.likeLine(31, 200.3, 51, 200.3, 8).likeLine(35, 202.8, 55, 202.8, 8);
 
   // The Grand-Place: guild houses all round, frites in the middle.
@@ -988,11 +988,11 @@ function brussels(c) {
   rail(86.9, 244, 87, 248.1); rail(95, 244, 95.1, 248.1); rail(86.9, 248, 95.1, 248.1);
   c.gpu('End of the pier', 91, 246, { y: CURB + 0.15 });
   c.likeLine(91, 226, 91, 242, 8, { y: CURB + 0.15 });
-  const colours = ['#1a3aa0', '#c8182a', '#f2c230', '#3a8a4a'];
+  const colors = ['#1a3aa0', '#c8182a', '#f2c230', '#3a8a4a'];
   for (let x = 14, i = 0; x < 112; x += 9, i++) {
     if (Math.abs(x - 91) < 4) continue;
     const z = 228 + (i % 2) * 3;
-    c.prop('parasol', x, z, { colour: colours[i % colours.length] });
+    c.prop('parasol', x, z, { color: colors[i % colors.length] });
     c.cylinder(x, z, 0.06, c.heightAt(x, z), c.heightAt(x, z) + 2.2);
     c.prop('chair', x + 1.4, z + 0.4);
   }
@@ -1020,7 +1020,7 @@ function computeFarm(c) {
   // The cooling towers: the far one has a lift up it.
   const tower = (cx, cz, label) => {
     c.cylinder(cx, cz, 5, 0, 7);
-    c.prop('tank', cx, cz, { r: 5, h: 7, colour: '#c8c4bc', tex: 'block', label });
+    c.prop('tank', cx, cz, { r: 5, h: 7, color: '#c8c4bc', tex: 'block', label });
   };
   tower(192, 182, 'COOLING');
   tower(210, 182, null);
@@ -1144,26 +1144,26 @@ function clear(c, x0, z0, x1, z1, m = 0.4) {
 }
 
 /** A shipping container, solid, from (x, z), `w` by `d` (its doors at the long end). */
-function container(c, x, z, w, d, colour) {
+function container(c, x, z, w, d, color) {
   if (!clear(c, x, z, x + w, z + d)) return;
   const y = c.heightAt(x + w / 2, z + d / 2);
-  c.prop('container', x, z, { x1: x + w, z1: z + d, colour, y });
+  c.prop('container', x, z, { x1: x + w, z1: z + d, color, y });
   c.solid(x, y, z, x + w, y + 2.6, z + d);
 }
 
 /** A tent pitched at (x, z): a dome, or a bell tent (`peak`). */
-function tent(c, x, z, colour, { r = 1.1, peak = false } = {}) {
+function tent(c, x, z, color, { r = 1.1, peak = false } = {}) {
   if (!clear(c, x - r, z - r, x + r, z + r)) return;
   const y = c.heightAt(x, z);
-  c.prop('tent', x, z, { r, colour, peak });
+  c.prop('tent', x, z, { r, color, peak });
   c.cylinder(x, z, r * 0.85, y, y + (peak ? 2 : r * 0.72));
 }
 
 /** A market stall at (x, z), facing +z, with `text` on its sign. */
-function stall(c, x, z, text, colour) {
+function stall(c, x, z, text, color) {
   if (!clear(c, x - 1.25, z - 0.65, x + 1.25, z + 0.65)) return;
   const y = c.heightAt(x, z);
-  c.prop('stall', x, z, { text, colour });
+  c.prop('stall', x, z, { text, color });
   c.solid(x - 1.2, y, z - 0.36, x + 1.2, y + 0.95, z + 0.36);
 }
 
@@ -1175,10 +1175,10 @@ function solar(c, x, z, length) {
 }
 
 /** A parasol, and a chair or two under it. */
-function parasol(c, x, z, colour) {
+function parasol(c, x, z, color) {
   if (!clear(c, x - 0.5, z - 0.5, x + 0.5, z + 0.5)) return;
   const y = c.heightAt(x, z);
-  c.prop('parasol', x, z, { colour });
+  c.prop('parasol', x, z, { color });
   c.cylinder(x, z, 0.06, y, y + 2.2);
   c.prop('chair', x + 1.2, z + 0.3).prop('chair', x - 1.2, z - 0.3);
 }
@@ -1193,7 +1193,7 @@ const CANVAS = ['#e07a2a', '#3a8a4a', '#2a5aa8', '#c8382c', '#f2c230', '#8a3aa8'
  */
 function furnish(c) {
   const rnd = random(77);
-  const colour = () => CANVAS[Math.floor(rnd() * CANVAS.length)];
+  const color = () => CANVAS[Math.floor(rnd() * CANVAS.length)];
 
   // Portland Heights: the farmers' market by the community garden, a stall outside the skate shop.
   stall(c, 38, 29, 'KOMBUCHA', '#3a8a4a');
@@ -1204,11 +1204,11 @@ function furnish(c) {
   stall(c, 86, 42.5, 'p(DOOM)', '#c8382c');
   stall(c, 96, 43.5, 'p(AGI)', '#1a3aa0');
   stall(c, 96, 50, 'BETS', '#3a8a4a');
-  for (const [x, z] of [[110, 43], [110, 49.5], [126.5, 51.5], [137.5, 54.5], [141.5, 55.5], [152.5, 54.5], [148, 55.5]]) tent(c, x, z, colour(), { peak: rnd() < 0.3 });
+  for (const [x, z] of [[110, 43], [110, 49.5], [126.5, 51.5], [137.5, 54.5], [141.5, 55.5], [152.5, 54.5], [148, 55.5]]) tent(c, x, z, color(), { peak: rnd() < 0.3 });
   placard(c, 145, 50.5, 'DAY 365\nOF THE PAUSE\n(STILL HERE)', { facing: 0, ...RED });
 
   // The Ivory Tower: the student encampment, the free pizza.
-  for (const [x, z] of [[219, 54], [221.5, 58.5], [218.5, 62.5], [222, 67]]) tent(c, x, z, colour());
+  for (const [x, z] of [[219, 54], [221.5, 58.5], [218.5, 62.5], [222, 67]]) tent(c, x, z, color());
   stall(c, 188, 60, 'FREE PIZZA (AI TALK)', '#c8382c');
   placard(c, 219, 50.5, 'STUDENTS FOR\nA PAUSE\n(UNTIL FINALS)', { facing: 0 });
 
@@ -1234,12 +1234,12 @@ function furnish(c) {
     c.place(['sedan', 'hatchback', 'pickup'][i % 3], x, 188, { paint: ['#c8382c', '#2c6ec8', '#e8e2d6', '#3a8a4a', '#1c1b1f'][i % 5], angle: Math.PI });
   }
   for (const [x, z] of [[86, 205], [90, 209.2], [98, 205], [102, 209.2], [74, 209]]) parasol(c, x, z, ['#1a3aa0', '#c8382c'][Math.round(x) % 2]);
-  for (const [x, z] of [[17.5, 206.5], [24.5, 201], [11.5, 205], [18, 214.5]]) tent(c, x, z, colour());
+  for (const [x, z] of [[17.5, 206.5], [24.5, 201], [11.5, 205], [18, 214.5]]) tent(c, x, z, color());
   stall(c, 28, 211, 'CLUB MATE', '#16161a');
   stall(c, 30, 226.6, 'GLACES', '#f2c230');
   stall(c, 70, 226.6, 'GAUFRES', '#c8882a');
 
-  // The Compute Farm: modular data centres in containers, generators, the solar farm.
+  // The Compute Farm: modular data centers in containers, generators, the solar farm.
   for (const x of [140, 148, 156, 164]) for (const z of [208.5, 212.5]) container(c, x, z, 6, 2.4, ['#c8ccd2', '#2a6ac8', '#e8e4dc'][Math.floor(rnd() * 3)]);
   container(c, 181, 170.5, 5, 2.4, '#e8b020');
   container(c, 181, 192, 5, 2.4, '#e8b020');
@@ -1248,8 +1248,8 @@ function furnish(c) {
 
   // The far side: the e/acc camp, all the way down the strip.
   for (let z = 132; z < 240; z += 9) {
-    tent(c, 249, z, colour(), { r: 1.0, peak: rnd() < 0.4 });
-    if (rnd() < 0.5) c.lamp(248.5, z + 3, { colour: '#ff9a3a', reach: 4, height: 0.4, glow: 0.9 });
+    tent(c, 249, z, color(), { r: 1.0, peak: rnd() < 0.4 });
+    if (rnd() < 0.5) c.lamp(248.5, z + 3, { color: '#ff9a3a', reach: 4, height: 0.4, glow: 0.9 });
   }
   placard(c, 247, 128.6, 'e/acc CAMP\nACCELERATE\n(TOWARD WHAT?)', { facing: 2 });
 

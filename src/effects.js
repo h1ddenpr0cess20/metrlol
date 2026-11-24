@@ -39,7 +39,7 @@ export function createEffects(GFX, scene) {
   const chaff = new GFX.PlaneGeometry(0.08, 0.05);
   const chaffMaterial = new GFX.MeshBasicMaterial({ name: 'chaff', color: new GFX.Color('#efe6d2'), side: GFX.DoubleSide });
   const paper = new GFX.PlaneGeometry(0.16, 0.1);
-  const confettiColours = ['#f2c230', '#fff2b0', '#e8902c', '#ffffff', '#f5d76e'].map((c) => new GFX.MeshBasicMaterial({ color: new GFX.Color(c), side: GFX.DoubleSide }));
+  const confettiColors = ['#f2c230', '#fff2b0', '#e8902c', '#ffffff', '#f5d76e'].map((c) => new GFX.MeshBasicMaterial({ color: new GFX.Color(c), side: GFX.DoubleSide }));
 
   function spawn(mesh, { x, y, z, vx, vy, vz, life, spin = 6, drag = 0, floaty = 1, bounce = 0.35 }) {
     mesh.position.set(x, y, z);
@@ -63,7 +63,7 @@ export function createEffects(GFX, scene) {
     samples() {
       return [
         new GFX.Mesh(shard, plastic('#aab2c2')), new GFX.Mesh(bubbles, tarMaterial), new GFX.Mesh(spark, sparkMaterial),
-        new GFX.Mesh(chaff, chaffMaterial), ...confettiColours.map((c) => new GFX.Mesh(paper, c)),
+        new GFX.Mesh(chaff, chaffMaterial), ...confettiColors.map((c) => new GFX.Mesh(paper, c)),
       ];
     },
 
@@ -122,7 +122,7 @@ export function createEffects(GFX, scene) {
     /** Glitter, for a golden seed. */
     confetti(x, y, z) {
       for (let i = 0; i < 80; i++) {
-        const m = new GFX.Mesh(paper, confettiColours[i % confettiColours.length]);
+        const m = new GFX.Mesh(paper, confettiColors[i % confettiColors.length]);
         const [ox, oy, oz] = outward(3, 7);
         spawn(m, { x, y, z, vx: ox, vy: oy, vz: oz, life: 2.6 + Math.random(), spin: 14, drag: 1.6, floaty: 0.35, bounce: 0 });
       }
